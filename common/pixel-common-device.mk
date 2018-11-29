@@ -22,7 +22,7 @@ PRODUCT_PRODUCT_PROPERTIES += \
 
 # Pixel Experience
 
-ifneq (,$(filter userdebug eng, $(TARGET_BUILD_VARIANT)))
+ifneq (,$(filter eng, $(TARGET_BUILD_VARIANT)))
 ifeq (,$(filter aosp_%,$(TARGET_PRODUCT)))
 PRODUCT_PACKAGES_DEBUG += wifi_diagnostic
 BOARD_VENDOR_SEPOLICY_DIRS += hardware/google/pixel-sepolicy/wifi_diagnostic
@@ -55,10 +55,11 @@ PRODUCT_PROPERTY_OVERRIDES += \
     dalvik.vm.systemuicompilerfilter=speed
 
 # Virtual fingerprint HAL
+ifneq (,$(filter eng, $(TARGET_BUILD_VARIANT)))
 PRODUCT_PACKAGES_DEBUG += com.android.hardware.biometrics.fingerprint.virtual
 
 # Virtual face HAL
 ifeq ($(RELEASE_AIDL_USE_UNFROZEN), true)
 PRODUCT_PACKAGES_DEBUG += com.android.hardware.biometrics.face.virtual
 endif
-
+endif
