@@ -8,7 +8,6 @@ apex {
     key: "com.android.vibrator.drv2624.key",
     certificate: ":com.android.vibrator.drv2624.certificate",
     file_contexts: "file_contexts",
-    use_vndk_as_stable: true,
     updatable: false,
 
     // install the apex in /vendor/apex
