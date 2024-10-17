@@ -62,6 +62,21 @@ class HwApi : public Vibrator::HwApi, private HwApiBase {
     bool setEffectIndex(uint32_t value) override { return set(value, &mEffectIndex); }
     bool setEffectQueue(std::string value) override { return set(value, &mEffectQueue); }
     bool hasEffectScale() override { return has(mEffectScale); }
+    uint32_t getContextScale() override {
+        return utils::getProperty("persist.vendor.vibrator.hal.context.scale", 100);
+    }
+    bool getContextEnable() override {
+        return utils::getProperty("persist.vendor.vibrator.hal.context.enable", false);
+    }
+    uint32_t getContextSettlingTime() override {
+        return utils::getProperty("persist.vendor.vibrator.hal.context.settlingtime", 3000);
+    }
+    uint32_t getContextCooldownTime() override {
+        return utils::getProperty("persist.vendor.vibrator.hal.context.cooldowntime", 1000);
+    }
+    bool getContextFadeEnable() override {
+        return utils::getProperty("persist.vendor.vibrator.hal.context.fade", false);
+    }
     bool setEffectScale(uint32_t value) override { return set(value, &mEffectScale); }
     bool setGlobalScale(uint32_t value) override { return set(value, &mGlobalScale); }
     bool setState(bool value) override { return set(value, &mState); }

@@ -337,6 +337,11 @@ TEST_F(VibratorTest, Constructor) {
 
     EXPECT_CALL(*mMockApi, hasEffectScale()).WillRepeatedly(Return(true));
     EXPECT_CALL(*mMockApi, hasAspEnable()).WillRepeatedly(Return(true));
+    EXPECT_CALL(*mMockApi, getContextScale()).WillRepeatedly(Return(0));
+    EXPECT_CALL(*mMockApi, getContextEnable()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*mMockApi, getContextSettlingTime()).WillRepeatedly(Return(0));
+    EXPECT_CALL(*mMockApi, getContextCooldownTime()).WillRepeatedly(Return(0));
+    EXPECT_CALL(*mMockApi, getContextFadeEnable()).WillRepeatedly(Return(false));
 
     createVibrator(std::move(mockapi), std::move(mockcal), std::move(mockstats), false);
 }

@@ -47,6 +47,7 @@ cc_defaults {
     name: "VibratorHalCs40l25TestDefaults",
     defaults: [
         "PixelVibratorTestDefaults",
+        "VibratorCapoDefaults",
         "android.hardware.vibrator-defaults.cs40l25",
     ],
     static_libs: [
@@ -59,17 +60,28 @@ cc_library {
     name: "android.hardware.vibrator-impl.cs40l25",
     defaults: [
         "VibratorHalCs40l25BinaryDefaults",
+        "VibratorCapoDefaults",
         "haptics_feature_defaults",
     ],
-    srcs: ["Vibrator.cpp"],
-    export_include_dirs: ["."],
+    srcs: [
+        "Vibrator.cpp",
+    ],
+    shared_libs: [
+        "PixelVibratorFlagsL26",
+    ],
+    export_include_dirs: [
+        ".",
+    ],
     vendor_available: true,
     visibility: [":__subpackages__"],
 }
 
 cc_binary {
     name: "android.hardware.vibrator-service.cs40l25",
-    defaults: ["VibratorHalCs40l25BinaryDefaults"],
+    defaults: [
+        "VibratorHalCs40l25BinaryDefaults",
+        "VibratorCapoDefaults",
+    ],
     init_rc: ["android.hardware.vibrator-service.cs40l25.rc"],
     vintf_fragments: ["android.hardware.vibrator-service.cs40l25.xml"],
     srcs: ["service.cpp"],
@@ -82,7 +94,10 @@ cc_binary {
 
 cc_binary {
     name: "android.hardware.vibrator-service.cs40l25-dual",
-    defaults: ["VibratorHalCs40l25BinaryDefaults"],
+    defaults: [
+        "VibratorHalCs40l25BinaryDefaults",
+        "VibratorCapoDefaults",
+    ],
     init_rc: ["android.hardware.vibrator-service.cs40l25-dual.rc"],
     vintf_fragments: ["android.hardware.vibrator-service.cs40l25-dual.xml"],
     srcs: ["service.cpp"],
