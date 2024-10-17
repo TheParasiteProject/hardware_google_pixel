@@ -33,6 +33,11 @@ class MockApi : public ::aidl::android::hardware::vibrator::Vibrator::HwApi {
     MOCK_METHOD1(getEffectDuration, bool(uint32_t *value));
     MOCK_METHOD1(setEffectIndex, bool(uint32_t value));
     MOCK_METHOD1(setEffectQueue, bool(std::string value));
+    MOCK_METHOD0(getContextScale, uint32_t());
+    MOCK_METHOD0(getContextEnable, bool());
+    MOCK_METHOD0(getContextSettlingTime, uint32_t());
+    MOCK_METHOD0(getContextCooldownTime, uint32_t());
+    MOCK_METHOD0(getContextFadeEnable, bool());
     MOCK_METHOD0(hasEffectScale, bool());
     MOCK_METHOD1(setEffectScale, bool(uint32_t value));
     MOCK_METHOD1(setGlobalScale, bool(uint32_t value));

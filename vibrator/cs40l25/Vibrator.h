@@ -19,8 +19,14 @@
 #include <tinyalsa/asoundlib.h>
 
 #include <array>
+#include <chrono>
+#include <ctime>
 #include <fstream>
 #include <future>
+
+#include "CapoDetector.h"
+
+using CapoDetector = android::chre::CapoDetector;
 
 namespace aidl {
 namespace android {
@@ -62,6 +68,21 @@ class Vibrator : public BnVibrator {
         virtual bool setEffectQueue(std::string value) = 0;
         // Reports whether setEffectScale() is supported.
         virtual bool hasEffectScale() = 0;
+        // Gets the scaling factor for contextual haptic events.
+        virtual uint32_t getContextScale() = 0;
+        // Gets the enable status for contextual haptic events.
+        virtual bool getContextEnable() = 0;
+        // Gets the settling time for contextual haptic events.
+        // This will allow the device to stay face up for the duration given,
+        // even if InMotion events were detected.
+        virtual uint32_t getContextSettlingTime() = 0;
+        // Gets the cooldown time for contextual haptic events.
+        // This is used to avoid changing the scale of close playback events.
+        virtual uint32_t getContextCooldownTime() = 0;
+        // Checks the enable status for contextual haptics fade feature.  When enabled
+        // this feature will cause the scaling factor to fade back up to max over
+        // the setting time set, instead of instantaneously changing it back to max.
+        virtual bool getContextFadeEnable() = 0;
         // Indicates the number of 0.125-dB steps of attenuation to apply to
         // waveforms triggered in response to vibration calls from the
         // Android vibrator HAL.
@@ -202,8 +223,7 @@ class Vibrator : public BnVibrator {
     ndk::ScopedAStatus on(uint32_t timeoutMs, uint32_t effectIndex,
                           const std::shared_ptr<IVibratorCallback> &callback);
     // set 'amplitude' based on an arbitrary scale determined by 'maximum'
-    ndk::ScopedAStatus setEffectAmplitude(float amplitude, float maximum);
-    ndk::ScopedAStatus setGlobalAmplitude(bool set);
+    ndk::ScopedAStatus setEffectAmplitude(float amplitude, float maximum, bool scalable);
     // 'simple' effects are those precompiled and loaded into the controller
     ndk::ScopedAStatus getSimpleDetails(Effect effect, EffectStrength strength,
                                         uint32_t *outEffectIndex, uint32_t *outTimeMs,
@@ -221,6 +241,8 @@ class Vibrator : public BnVibrator {
                                      const std::string *effectQueue,
                                      const std::shared_ptr<IVibratorCallback> &callback);
     ndk::ScopedAStatus setPwle(const std::string &pwleQueue);
+    uint16_t amplitudeToScale(float amplitude, float maximum, bool scalable);
+    void updateContext();
     bool isUnderExternalControl();
     void waitForComplete(std::shared_ptr<IVibratorCallback> &&callback);
     uint32_t intensityToVolLevel(float intensity, uint32_t effectIndex);
@@ -248,6 +270,7 @@ class Vibrator : public BnVibrator {
     bool mHasHapticAlsaDevice;
     bool mIsPrimitiveDelayEnabled;
     bool mIsUnderExternalControl;
+    float mGlobalAmplitude = 1.0;
     float mResonantFrequency;
     uint32_t mRedc{0};
     int8_t mActiveId{-1};
@@ -256,6 +279,15 @@ class Vibrator : public BnVibrator {
     bool mGenerateBandwidthAmplitudeMapDone;
     uint32_t mTotalDuration{0};
     std::mutex mTotalDurationMutex;
+    uint32_t mScaleTime;
+    bool mFadeEnable;
+    uint32_t mScalingFactor;
+    uint32_t mScaleCooldown;
+    bool mContextEnable;
+    bool mContextEnabledPreviously{false};
+    uint32_t mLastEffectPlayedTime = 0;
+    float mLastPlayedScale = 0;
+    sp<CapoDetector> mContextListener;
 };
 
 }  // namespace vibrator

@@ -50,7 +50,7 @@ on boot
 service vendor.vibrator.cs40l25-dual /vendor/bin/hw/android.hardware.vibrator-service.cs40l25-dual
     class hal
     user system
-    group system
+    group system context_hub
 
     setenv PROPERTY_PREFIX ro.vendor.vibrator.hal.
     setenv CALIBRATION_FILEPATH /mnt/vendor/persist/haptics/cs40l25a_dual.cal
@@ -76,3 +76,10 @@ service vendor.vibrator.cs40l25-dual /vendor/bin/hw/android.hardware.vibrator-se
         "
 
     disabled
+
+# Route vibrator.adaptive_haptics.enabled to persist
+on property:vibrator.adaptive_haptics.enabled=0
+    setprop persist.vendor.vibrator.hal.context.enable false
+
+on property:vibrator.adaptive_haptics.enabled=1
+    setprop persist.vendor.vibrator.hal.context.enable true
