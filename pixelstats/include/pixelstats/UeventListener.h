@@ -19,6 +19,7 @@
 
 #include <aidl/android/frameworks/stats/IStats.h>
 #include <android-base/chrono_utils.h>
+#include <json/reader.h>
 #include <pixelstats/BatteryCapacityReporter.h>
 #include <pixelstats/ChargeStatsReporter.h>
 #include <pixelstats/BatteryFGReporter.h>
@@ -40,19 +41,6 @@ using aidl::android::frameworks::stats::IStats;
  */
 class UeventListener {
   public:
-    struct UeventPaths {
-        const char *const AudioUevent;
-        const char *const SsocDetailsPath;
-        const char *const OverheatPath;
-        const char *const ChargeMetricsPath;
-        const char *const TypeCPartnerUevent;
-        const char *const TypeCPartnerVidPath;
-        const char *const TypeCPartnerPidPath;
-        const char *const WirelessChargerPtmcUevent;  // Deprecated.
-        const char *const WirelessChargerPtmcPath;    // Deprecated.
-        const std::vector<std::string> FwUpdatePath;
-        const std::vector<std::string> FGAbnlPath;
-    };
     constexpr static const char *const ssoc_details_path =
             "/sys/class/power_supply/battery/ssoc_details";
     constexpr static const char *const overheat_path_default =
@@ -65,19 +53,13 @@ class UeventListener {
             "/sys/class/typec/port0-partner/identity/product";
     constexpr static const char *const typec_partner_uevent_default = "DEVTYPE=typec_partner";
 
-    UeventListener(const std::string audio_uevent, const std::string ssoc_details_path = "",
-                   const std::string overheat_path = overheat_path_default,
-                   const std::string charge_metrics_path = charge_metrics_path_default,
-                   const std::string typec_partner_vid_path = typec_partner_vid_path_default,
-                   const std::string typec_partner_pid_path = typec_partner_pid_path_default,
-                   const std::vector<std::string> fw_update_path = {""},
-                   const std::vector<std::string> fg_abnl_path = {""});
-    UeventListener(const struct UeventPaths &paths);
+    UeventListener(const Json::Value& configData);
 
     bool ProcessUevent();  // Process a single Uevent.
     void ListenForever();  // Process Uevents forever
 
   private:
+    const Json::Value configData;
     bool ReadFileToInt(const std::string &path, int *val);
     bool ReadFileToInt(const char *path, int *val);
     void ReportMicStatusUevents(const std::shared_ptr<IStats> &stats_client, const char *devpath,
@@ -106,26 +88,15 @@ class UeventListener {
     void ReportFwUpdateEvent(const std::shared_ptr<IStats> &stats_client, const char *driver);
     void ReportWlcFwUpdateEvent(const std::shared_ptr<IStats> &stats_client, const char *driver);
 
-    const std::string kAudioUevent;
-    const std::string kBatterySSOCPath;
-    const std::string kUsbPortOverheatPath;
-    const std::string kChargeMetricsPath;
-    const std::string kTypeCPartnerUevent;
-    const std::string kTypeCPartnerVidPath;
-    const std::string kTypeCPartnerPidPath;
-    const std::vector<std::string> kFwUpdatePath;
-    const std::vector<std::string> kFGAbnlPath;
-
-
     const std::unordered_map<std::string, PixelAtoms::GpuEvent::GpuEventType>
-            kGpuEventTypeStrToEnum{
+            kMaliGpuEventTypeStrToEnum{
                     {"KMD_ERROR",
                      PixelAtoms::GpuEvent::GpuEventType::GpuEvent_GpuEventType_MALI_KMD_ERROR},
                     {"GPU_RESET",
                      PixelAtoms::GpuEvent::GpuEventType::GpuEvent_GpuEventType_MALI_GPU_RESET}};
 
     const std::unordered_map<std::string, PixelAtoms::GpuEvent::GpuEventInfo>
-            kGpuEventInfoStrToEnum{
+            kMaliGpuEventInfoStrToEnum{
                     {"CSG_REQ_STATUS_UPDATE",
                      PixelAtoms::GpuEvent::GpuEventInfo::
                              GpuEvent_GpuEventInfo_MALI_CSG_REQ_STATUS_UPDATE},
@@ -176,6 +147,20 @@ class UeventListener {
                     {"TRACE_BUF_INVALID_SLOT",
                      PixelAtoms::GpuEvent::GpuEventInfo::
                              GpuEvent_GpuEventInfo_MALI_TRACE_BUF_INVALID_SLOT}};
+
+    const std::unordered_map<std::string, PixelAtoms::GpuEvent::GpuEventType>
+            kPVRGpuEventTypeStrToEnum{
+                    {"KMD_ERROR",
+                     PixelAtoms::GpuEvent::GpuEventType::GpuEvent_GpuEventType_PVR_KMD_ERROR}};
+
+    const std::unordered_map<std::string, PixelAtoms::GpuEvent::GpuEventInfo>
+            kPVRGpuEventInfoStrToEnum{
+                    {"FW_PAGEFAULT", PixelAtoms::GpuEvent::GpuEventInfo::
+                                                   GpuEvent_GpuEventInfo_PVR_FW_PAGEFAULT},
+                    {"HOST_WDG_FW_ERROR", PixelAtoms::GpuEvent::GpuEventInfo::
+                                                    GpuEvent_GpuEventInfo_PVR_HOST_WDG_FW_ERROR},
+                    {"GUILTY_LOCKUP", PixelAtoms::GpuEvent::GpuEventInfo::
+                                                    GpuEvent_GpuEventInfo_PVR_GUILTY_LOCKUP}};
 
     const std::unordered_map<std::string,
                              PixelAtoms::ThermalSensorAbnormalityDetected::AbnormalityType>
