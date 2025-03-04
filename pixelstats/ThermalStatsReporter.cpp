@@ -179,11 +179,6 @@ void ThermalStatsReporter::logThermalDfsStats(const std::shared_ptr<IStats> &sta
         ALOGE("Unable to report thermal DFS stats to Stats service");
 }
 
-void ThermalStatsReporter::logThermalStats(const std::shared_ptr<IStats> &stats_client,
-                                           const std::vector<std::string> &thermal_stats_paths) {
-    logThermalDfsStats(stats_client, thermal_stats_paths);
-}
-
 }  // namespace pixel
 }  // namespace google
 }  // namespace hardware

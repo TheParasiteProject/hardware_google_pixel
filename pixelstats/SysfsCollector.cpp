@@ -70,7 +70,6 @@ using android::hardware::google::pixel::PixelAtoms::PcieLinkStatsReported;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsHealth;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsResetCount;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsErrorCountReported;
-using android::hardware::google::pixel::PixelAtoms::ThermalDfsStats;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioAdaptedInfoStatsReported;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioBtMediaStatsReported;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioHardwareStatsReported;
@@ -457,9 +456,10 @@ void SysfsCollector::logHDCPStats(const std::shared_ptr<IStats> &stats_client) {
 }
 
 void SysfsCollector::logThermalStats(const std::shared_ptr<IStats> &stats_client) {
+    //**************** Legacy dfs stats monitoring. ************************//
     std::vector<std::string> thermalStatsPaths =
         readStringVectorFromJson(configData["ThermalStatsPaths"]);
-    thermal_stats_reporter_.logThermalStats(stats_client, thermalStatsPaths);
+    thermal_stats_reporter_.logThermalDfsStats(stats_client, thermalStatsPaths);
 }
 
 void SysfsCollector::logDisplayPortDSCStats(const std::shared_ptr<IStats> &stats_client) {

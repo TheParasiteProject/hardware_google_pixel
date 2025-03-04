@@ -36,8 +36,8 @@ using aidl::android::frameworks::stats::VendorAtomValue;
 class ThermalStatsReporter {
   public:
     ThermalStatsReporter();
-    void logThermalStats(const std::shared_ptr<IStats> &stats_client,
-                         const std::vector<std::string> &thermal_stats_paths);
+    void logThermalDfsStats(const std::shared_ptr<IStats> &stats_client,
+                            const std::vector<std::string> &thermal_stats_paths);
 
   private:
     struct ThermalDfsCounts {
@@ -56,8 +56,6 @@ class ThermalStatsReporter {
     const int kNumOfThermalDfsStats = 6;
     struct ThermalDfsCounts prev_data;
 
-    void logThermalDfsStats(const std::shared_ptr<IStats> &stats_client,
-                            const std::vector<std::string> &thermal_stats_paths);
     bool captureThermalDfsStats(const std::vector<std::string> &thermal_stats_paths,
                                 struct ThermalDfsCounts *cur_data);
     bool readDfsCount(const std::string &path, int64_t *val);
