@@ -89,6 +89,7 @@ using android::hardware::google::pixel::PixelAtoms::VendorTempResidencyStats;
 using android::hardware::google::pixel::PixelAtoms::WaterEventReported;
 using android::hardware::google::pixel::PixelAtoms::ZramBdStat;
 using android::hardware::google::pixel::PixelAtoms::ZramMmStat;
+using android::hardware::google::pixel::PixelAtoms::UfsStorageTypeReported;
 
 SysfsCollector::SysfsCollector(const Json::Value &configData)
     : configData(configData), thermal_stats_reporter_(configData) {}
@@ -673,6 +674,37 @@ void SysfsCollector::logUFSErrorsCount(const std::shared_ptr<IStats> &stats_clie
     const ndk::ScopedAStatus ret = stats_client->reportVendorAtom(event);
     if (!ret.isOk()) {
         ALOGE("Unable to report StorageUfsErrorCountReported to Stats service");
+    }
+}
+
+void SysfsCollector::logUfsStorageType() {
+    const std::shared_ptr<IStats> stats_client = getStatsService();
+    if (!stats_client) {
+        ALOGE("Unable to get AIDL Stats service");
+        return;
+    }
+    int ufs_type = 0;
+    bool zufs_provisioned = android::base::GetBoolProperty(
+        "ro.vendor.product.ufs_type_zufs", false);
+    ALOGD("Property ro.vendor.product.ufs_type_zufs: %s", zufs_provisioned ? "true" : "false");
+
+    if (zufs_provisioned)
+        ufs_type = UfsStorageTypeReported::ZUFS;
+    else
+        ufs_type = UfsStorageTypeReported::CONVENTIONAL;
+
+    // Load values array
+    std::vector<VendorAtomValue> values(1);
+    values[UfsStorageTypeReported::kUfsTypeFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(ufs_type);
+
+    // Send vendor atom to IStats HAL
+    VendorAtom event = {.reverseDomainName = PixelAtoms::ReverseDomainNames().pixel(),
+                        .atomId = PixelAtoms::Atom::kUfsStorageTypeReported,
+                        .values = std::move(values)};
+    const ndk::ScopedAStatus ret = stats_client->reportVendorAtom(event);
+    if (!ret.isOk()) {
+        ALOGE("Unable to report UfsStorageTypeReported to Stats service");
     }
 }
 
@@ -2382,6 +2414,7 @@ void SysfsCollector::logWater() {
 
 void SysfsCollector::logOnce() {
     logBrownout();
+    logUfsStorageType();
     logWater();
 }
 
