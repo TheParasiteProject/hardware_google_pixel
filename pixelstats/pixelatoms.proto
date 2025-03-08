@@ -519,6 +519,7 @@ message CitadelEvent {
     UPGRADED = 3;
     ALERT_V2 = 4;
     SEC_CH_STATE = 5;
+    ALERT_V3 = 6;
   };
   optional string reverse_domain_name = 1;
   optional Event event = 2;
@@ -566,6 +567,44 @@ message CitadelEvent {
   // SEC_CH_STATE-specific filed. This field corresponds to the state
   // of GSA-GSC secure channel.
   optional int32 sec_ch_state = 23;
+
+  // Added ALERT_V3 specific fields
+
+  // bitmask of all the alerts that occurred.
+  repeated bool alert_bitmask = 24;
+
+  // For V3 alerts there are 3 types of alerts - alerts of different types
+  // differ in how they are handled on GSC, with there being 3 types:
+  //  1. Informational - alerts that are not handled
+  //  2. Recoverable - alerts that are handled but SW
+  //  3. Fatal - alert cannot be handled by SW and always reset the chip
+  //  4. Reserved - alert type is not being used right now, may be
+  //     assigned in the future
+
+  // Alert types - used to index into the following fields.
+  enum AlertV3Types {
+    INFORMATIONAL = 0;
+    RECOVERABLE = 1;
+    FATAL = 2;
+    RESERVED = 3;
+  };
+
+  // Amount of time that alerts from each type must be handled in before
+  // escalation occurs.
+  repeated int64 type_escalation_ctrs = 25;
+  // Number of alerts that have occurred for each alert type.
+  repeated int32 type_cnts = 26;
+  // Escalation level for each alert type. A higher escalation level corresponds
+  // to greater severity and need for handling by SW/HW.
+  repeated int32 type_escalation_levels = 27;
+
+  // Invidivual alert fields. Information from single alerts are grouped by
+  // index.
+
+  // Cause of alerts
+  repeated int64 alert_causes = 28;
+  // ID of alerts
+  repeated int32 alerts = 29;
 }
 
 /* A message containing the citadel firmware version. */
@@ -3239,7 +3278,12 @@ message CallUsageStatsReported {
   optional float average_power = 11;
 
   /* background noise level from 1 (lowest) to 12 (highest). */
-  optional float noise_level = 12;
+  optional float noise_level = 12 [deprecated = true];
+
+  // durations list of size 12 representing percentage
+  // of duration of each background noise level
+  // from -1 (lowest) to 12 (highest).
+  repeated float noise_level_percentages = 13;
 }
 
 /*
@@ -3359,22 +3403,22 @@ message WaterEventReported {
   /* The state of the reference sensor. */
   optional SensorState reference_state = 4;
   /* The threshold of the reference in mV. */
-  optional int32 reference_threshold_mv = 8;
+  optional int32 reference_threshold_mv = 8 [deprecated = true];
 
   /* The state of sensor 0. */
   optional SensorState sensor0_state = 5;
   /* The threshold of sensor 0 in mV. */
-  repeated int32 sensor0_threshold_mv = 9 [packed = true];
+  repeated int32 sensor0_threshold_mv = 9 [packed = true, deprecated = true];
 
   /* The state of sensor 1. */
   optional SensorState sensor1_state = 6;
   /* The threshold of sensor1 in mv. */
-  repeated int32 sensor1_threshold_mv = 10 [packed = true];
+  repeated int32 sensor1_threshold_mv = 10 [packed = true, deprecated = true];
 
   /* The state of sensor 2. */
   optional SensorState sensor2_state = 7;
   /* The threshold of the sensor 2 in mv. */
-  repeated int32 sensor2_threshold_mv = 11 [packed = true];
+  repeated int32 sensor2_threshold_mv = 11 [packed = true, deprecated = true];
 
   /* Was system fault enabled */
   optional CircuitState fault_enabled = 12;
