@@ -251,6 +251,8 @@ message ChargeStats {
     optional int32 aacr_algo = 19;
     optional int32 aacp_version = 20;
     optional int32 aacc = 21;
+    optional int32 aafv = 22;
+    optional int32 max_charge_voltage = 23;
 }
 
 /* A message containing stats from each charge voltage tier. */
