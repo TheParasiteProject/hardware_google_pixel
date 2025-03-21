@@ -455,12 +455,12 @@ ndk::ScopedAStatus PowerHintSession<HintManagerT, PowerSessionManagerT>::reportA
             adpfConfig->mHeuristicRampup.has_value() && adpfConfig->mHeuristicRampup.value();
 
     if (hboostEnabled) {
-        FrameBuckets newFramesInBuckets;
+        FrameTimingMetrics newFrameMetrics;
         mSessionRecords->addReportedDurations(
-                actualDurations, mDescriptor->targetNs.count(), newFramesInBuckets,
+                actualDurations, mDescriptor->targetNs.count(), newFrameMetrics,
                 mSessTag == SessionTag::SURFACEFLINGER && mPSManager->getGameModeEnableState());
         mPSManager->updateHboostStatistics(mSessionId, mJankyLevel, actualDurations.size());
-        mPSManager->updateFrameBuckets(mSessionId, newFramesInBuckets);
+        mPSManager->updateFrameMetrics(mSessionId, newFrameMetrics);
         updateHeuristicBoost();
         if (heurRampupEnabled && mPSManager->hasValidTaskRampupMultNode()) {
             mPSManager->updateRampupBoostMode(mSessionId, mJankyLevel,
