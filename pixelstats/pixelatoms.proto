@@ -147,6 +147,7 @@ message Atom {
       BatteryFirmwareUpdateReported battery_firmware_update_reported = 105092;
       PowerFifoDump power_fifo_dump = 105093 [(android.os.statsd.module) = "pixelpower"];
       GnssTtffReported gnss_ttff_reported = 105094 [(android.os.statsd.module) = "pixelgnss"];
+      StorageUfsErrorCountReported storage_ufs_error_count_reported = 105095;
     }
     // AOSP atom ID range ends at 109999
     reserved 109997; // reserved for VtsVendorAtomJavaTest test atom
@@ -3524,4 +3525,44 @@ message GnssTtffReported {
   optional bool reference_frequency_used = 20;
   optional bool almanac_used = 21;
   optional bool ephemeris_used = 22;
+}
+
+/*
+ * Collects and reports counts of various UFS error types.
+ * Logged from:
+ *   hardware/google/pixel/pixelstats/SysfsCollector.cpp
+ *
+ * Estimated Logging Rate:
+ * Peak: 1 times in 24 hours | Avg: 1 times per device per day
+ */
+message StorageUfsErrorCountReported {
+  /* Vendor reverse domain name */
+  optional string reverse_domain_name = 1;
+
+  /* Number of auto_hibern8_err_count read from the ufs err_stats */
+  optional int32 auto_hibern8_err_count = 2;
+  /* Number of dev_reset_count read from the ufs err_stats */
+  optional int32 dev_reset_count = 3;
+  /* Number of dl_err_count read from the ufs err_stats */
+  optional int32 dl_err_count = 4;
+  /* Number of dme_err_count read from the ufs err_stats */
+  optional int32 dme_err_count = 5;
+  /* Number of fatal_err_count read from the ufs err_stats */
+  optional int32 fatal_err_count = 6;
+  /* Number of host_reset_count read from the ufs err_stats */
+  optional int32 host_reset_count = 7;
+  /* Number of link_startup_err_count read from the ufs err_stats */
+  optional int32 link_startup_err_count = 8;
+  /* Number of nl_err_count read from the ufs err_stats */
+  optional int32 nl_err_count = 9;
+  /* Number of pa_err_count read from the ufs err_stats */
+  optional int32 pa_err_count = 10;
+  /* Number of resume_err_count read from the ufs err_stats */
+  optional int32 resume_err_count = 11;
+  /* Number of suspend_err_count read from the ufs err_stats */
+  optional int32 suspend_err_count = 12;
+  /* Number of task_abort_count read from the ufs err_stats */
+  optional int32 task_abort_count = 13;
+  /* Number of tl_err_count read from the ufs err_stats */
+  optional int32 tl_err_count = 14;
 }
