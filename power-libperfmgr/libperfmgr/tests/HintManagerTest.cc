@@ -55,7 +55,7 @@ constexpr char kJSON_RAW[] = R"(
         },
         {
             "Name": "CPUCluster1MinFreq",
-            "Path": "/sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq",
+            "Paths": ["/sys/devices/system/cpu/cpu4/cpufreq/scaling_min_freq"],
             "Values": [
                 "1512000",
                 "1134000",
@@ -65,7 +65,7 @@ constexpr char kJSON_RAW[] = R"(
         },
         {
             "Name": "ModeProperty",
-            "Path": "vendor.pwhal.mode",
+            "Paths": ["vendor.pwhal.mode"],
             "Values": [
                 "HIGH",
                 "LOW",
@@ -75,7 +75,7 @@ constexpr char kJSON_RAW[] = R"(
         },
         {
             "Name": "TestEnableProperty",
-            "Path": "vendor.pwhal.enable.test",
+            "Paths": ["vendor.pwhal.enable.test"],
             "Values": [
                 "0",
                 "1"
@@ -157,7 +157,7 @@ constexpr char kJSON_ADPF[] = R"(
     "Nodes": [
         {
             "Name": "OTHER",
-            "Path": "<AdpfConfig>:OTHER",
+            "Paths": ["<AdpfConfig>:OTHER"],
             "Values": [
                 "ADPF_DEFAULT"
             ],
@@ -165,7 +165,7 @@ constexpr char kJSON_ADPF[] = R"(
         },
         {
             "Name": "SURFACEFLINGER",
-            "Path": "<AdpfConfig>:SURFACEFLINGER",
+            "Paths": ["<AdpfConfig>:SURFACEFLINGER"],
             "Values": [
                 "ADPF_DEFAULT",
                 "ADPF_SF"
@@ -306,16 +306,16 @@ class HintManagerTest : public ::testing::Test, public HintManager {
         // Set up 3 dummy nodes
         std::unique_ptr<TemporaryFile> tf = std::make_unique<TemporaryFile>();
         nodes_.emplace_back(new FileNode(
-            "n0", tf->path, {{"n0_value0"}, {"n0_value1"}, {"n0_value2"}}, 2,
+            "n0", {tf->path}, {{"n0_value0"}, {"n0_value1"}, {"n0_value2"}}, 2,
             false, false));
         files_.emplace_back(std::move(tf));
         tf = std::make_unique<TemporaryFile>();
         nodes_.emplace_back(new FileNode(
-            "n1", tf->path, {{"n1_value0"}, {"n1_value1"}, {"n1_value2"}}, 2,
+            "n1", {tf->path}, {{"n1_value0"}, {"n1_value1"}, {"n1_value2"}}, 2,
             true, true));
         files_.emplace_back(std::move(tf));
         nodes_.emplace_back(new PropertyNode(
-            "n2", prop_, {{"n2_value0"}, {"n2_value1"}, {"n2_value2"}}, 2,
+            "n2", {prop_}, {{"n2_value0"}, {"n2_value1"}, {"n2_value2"}}, 2,
             true));
         nm_ = new NodeLooperThread(std::move(nodes_));
         // Set up dummy actions
@@ -529,8 +529,8 @@ TEST_F(HintManagerTest, ParseNodesTest) {
     EXPECT_EQ(4u, nodes.size());
     EXPECT_EQ("CPUCluster0MinFreq", nodes[0]->GetName());
     EXPECT_EQ("CPUCluster1MinFreq", nodes[1]->GetName());
-    EXPECT_EQ(files_[0 + 2]->path, nodes[0]->GetPath());
-    EXPECT_EQ(files_[1 + 2]->path, nodes[1]->GetPath());
+    EXPECT_THAT(nodes[0]->GetPaths(), testing::ElementsAre(files_[0 + 2]->path));
+    EXPECT_THAT(nodes[1]->GetPaths(), testing::ElementsAre(files_[1 + 2]->path));
     EXPECT_EQ("1512000", nodes[0]->GetValues()[0]);
     EXPECT_EQ("1134000", nodes[0]->GetValues()[1]);
     EXPECT_EQ("384000", nodes[0]->GetValues()[2]);
@@ -545,7 +545,7 @@ TEST_F(HintManagerTest, ParseNodesTest) {
     EXPECT_FALSE(reinterpret_cast<FileNode*>(nodes[0].get())->GetHoldFd());
     EXPECT_TRUE(reinterpret_cast<FileNode*>(nodes[1].get())->GetHoldFd());
     EXPECT_EQ("ModeProperty", nodes[2]->GetName());
-    EXPECT_EQ(prop_, nodes[2]->GetPath());
+    EXPECT_THAT(nodes[2]->GetPaths(), testing::ElementsAre(prop_));
     EXPECT_EQ("HIGH", nodes[2]->GetValues()[0]);
     EXPECT_EQ("LOW", nodes[2]->GetValues()[1]);
     EXPECT_EQ("NONE", nodes[2]->GetValues()[2]);
@@ -615,8 +615,8 @@ TEST_F(HintManagerTest, ParsePropertyNodesEmptyValueTest) {
     EXPECT_EQ(4u, nodes.size());
     EXPECT_EQ("CPUCluster0MinFreq", nodes[0]->GetName());
     EXPECT_EQ("CPUCluster1MinFreq", nodes[1]->GetName());
-    EXPECT_EQ(files_[0 + 2]->path, nodes[0]->GetPath());
-    EXPECT_EQ(files_[1 + 2]->path, nodes[1]->GetPath());
+    EXPECT_THAT(nodes[0]->GetPaths(), testing::ElementsAre(files_[0 + 2]->path));
+    EXPECT_THAT(nodes[1]->GetPaths(), testing::ElementsAre(files_[1 + 2]->path));
     EXPECT_EQ("1512000", nodes[0]->GetValues()[0]);
     EXPECT_EQ("1134000", nodes[0]->GetValues()[1]);
     EXPECT_EQ("384000", nodes[0]->GetValues()[2]);
@@ -631,7 +631,7 @@ TEST_F(HintManagerTest, ParsePropertyNodesEmptyValueTest) {
     EXPECT_FALSE(reinterpret_cast<FileNode*>(nodes[0].get())->GetHoldFd());
     EXPECT_TRUE(reinterpret_cast<FileNode*>(nodes[1].get())->GetHoldFd());
     EXPECT_EQ("ModeProperty", nodes[2]->GetName());
-    EXPECT_EQ(prop_, nodes[2]->GetPath());
+    EXPECT_THAT(nodes[2]->GetPaths(), testing::ElementsAre(prop_));
     EXPECT_EQ("HIGH", nodes[2]->GetValues()[0]);
     EXPECT_EQ("", nodes[2]->GetValues()[1]);
     EXPECT_EQ("NONE", nodes[2]->GetValues()[2]);
