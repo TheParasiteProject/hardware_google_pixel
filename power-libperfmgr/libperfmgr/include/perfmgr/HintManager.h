@@ -195,7 +195,7 @@ class HintManager {
     static std::unique_ptr<HintManager> sInstance;
 
     // Hint Update Callback
-    void OnNodeUpdate(const std::string &name, const std::string &path, const std::string &value);
+    void OnNodeUpdate(const std::string &name, const std::vector<std::string> &paths, const std::string &value);
     // set ADPF config by hint name.
     std::unordered_map<std::string, std::vector<AdpfCallback *>> tag_update_callback_list_;
 };

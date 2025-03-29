@@ -31,9 +31,9 @@ namespace perfmgr {
 // FileNode represents file
 class FileNode : public Node {
   public:
-    FileNode(std::string name, std::string node_path, std::vector<RequestGroup> req_sorted,
-             std::size_t default_val_index, bool reset_on_init, bool truncate,
-             bool hold_fd = false, bool write_only = false);
+    FileNode(std::string name, std::vector<std::string> node_paths,
+             std::vector<RequestGroup> req_sorted, std::size_t default_val_index,
+             bool reset_on_init, bool truncate, bool hold_fd = false, bool write_only = false);
 
     std::chrono::milliseconds Update(bool log_error) override;
 

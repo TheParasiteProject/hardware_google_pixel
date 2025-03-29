@@ -48,6 +48,13 @@ using ::android::sp;
 
 using NotificationCallback = std::function<void(const Temperature &t)>;
 
+#define INVALID_TEMPERATURE_KERNEL -274000
+#define UNDEFINED_TEMPERATURE -FLT_MAX
+
+#define TEMP_CONVERSION(temp_val, sensor_info)                          \
+    (((temp_val) == INVALID_TEMPERATURE_KERNEL) ? UNDEFINED_TEMPERATURE \
+                                                : ((temp_val) * sensor_info.multiplier))
+
 // Get thermal_zone type
 bool getThermalZoneTypeById(int tz_id, std::string *);
 

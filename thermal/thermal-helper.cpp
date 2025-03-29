@@ -587,7 +587,7 @@ SensorReadStatus ThermalHelperImpl::readTemperature(std::string_view sensor_name
     const auto &sensor_info = sensor_info_map_.at(sensor_name.data());
     out->type = sensor_info.type;
     out->name = sensor_name.data();
-    out->value = temp * sensor_info.multiplier;
+    out->value = TEMP_CONVERSION(temp, sensor_info);
 
     std::pair<ThrottlingSeverity, ThrottlingSeverity> status =
             std::make_pair(ThrottlingSeverity::NONE, ThrottlingSeverity::NONE);
@@ -1532,7 +1532,9 @@ SensorReadStatus ThermalHelperImpl::readThermalSensor(
         sensor_status.thermal_cached.temp = *temp;
         sensor_status.thermal_cached.timestamp = now;
     }
-    auto real_temp = (*temp) * sensor_info.multiplier;
+
+    auto real_temp = TEMP_CONVERSION(*temp, sensor_info);
+
     thermal_stats_helper_.updateSensorTempStatsByThreshold(sensor_name, real_temp);
     return SensorReadStatus::OKAY;
 }
