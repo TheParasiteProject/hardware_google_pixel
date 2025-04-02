@@ -348,9 +348,6 @@ void BatteryEEPROMReporter::checkAndReportFGModelLoading(const std::shared_ptr<I
     int num;
     const char *data;
 
-    if (path.empty())
-        return;
-
     /* not found */
     if (path.empty())
         return;
