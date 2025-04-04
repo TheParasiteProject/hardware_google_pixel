@@ -61,7 +61,8 @@ constexpr char kJSON_RAW[] = R"(
                 "1134000",
                 "384000"
             ],
-            "HoldFd": true
+            "HoldFd": true,
+            "AllowFailure": true
         },
         {
             "Name": "ModeProperty",
@@ -307,12 +308,12 @@ class HintManagerTest : public ::testing::Test, public HintManager {
         std::unique_ptr<TemporaryFile> tf = std::make_unique<TemporaryFile>();
         nodes_.emplace_back(new FileNode(
             "n0", {tf->path}, {{"n0_value0"}, {"n0_value1"}, {"n0_value2"}}, 2,
-            false, false));
+            false, false, false));
         files_.emplace_back(std::move(tf));
         tf = std::make_unique<TemporaryFile>();
         nodes_.emplace_back(new FileNode(
             "n1", {tf->path}, {{"n1_value0"}, {"n1_value1"}, {"n1_value2"}}, 2,
-            true, true));
+            true, true, false, true));
         files_.emplace_back(std::move(tf));
         nodes_.emplace_back(new PropertyNode(
             "n2", {prop_}, {{"n2_value0"}, {"n2_value1"}, {"n2_value2"}}, 2,
@@ -544,6 +545,8 @@ TEST_F(HintManagerTest, ParseNodesTest) {
     // no dynamic_cast intentionally in Android
     EXPECT_FALSE(reinterpret_cast<FileNode*>(nodes[0].get())->GetHoldFd());
     EXPECT_TRUE(reinterpret_cast<FileNode*>(nodes[1].get())->GetHoldFd());
+    EXPECT_FALSE(reinterpret_cast<FileNode*>(nodes[0].get())->GetAllowFailure());
+    EXPECT_TRUE(reinterpret_cast<FileNode*>(nodes[1].get())->GetAllowFailure());
     EXPECT_EQ("ModeProperty", nodes[2]->GetName());
     EXPECT_THAT(nodes[2]->GetPaths(), testing::ElementsAre(prop_));
     EXPECT_EQ("HIGH", nodes[2]->GetValues()[0]);
@@ -630,6 +633,8 @@ TEST_F(HintManagerTest, ParsePropertyNodesEmptyValueTest) {
     // no dynamic_cast intentionally in Android
     EXPECT_FALSE(reinterpret_cast<FileNode*>(nodes[0].get())->GetHoldFd());
     EXPECT_TRUE(reinterpret_cast<FileNode*>(nodes[1].get())->GetHoldFd());
+    EXPECT_FALSE(reinterpret_cast<FileNode*>(nodes[0].get())->GetAllowFailure());
+    EXPECT_TRUE(reinterpret_cast<FileNode*>(nodes[1].get())->GetAllowFailure());
     EXPECT_EQ("ModeProperty", nodes[2]->GetName());
     EXPECT_THAT(nodes[2]->GetPaths(), testing::ElementsAre(prop_));
     EXPECT_EQ("HIGH", nodes[2]->GetValues()[0]);
