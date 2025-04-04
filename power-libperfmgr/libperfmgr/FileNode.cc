@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cerrno>
 #define ATRACE_TAG (ATRACE_TAG_POWER | ATRACE_TAG_HAL)
 #define LOG_TAG "libperfmgr"
 
@@ -32,13 +33,14 @@ namespace perfmgr {
 
 FileNode::FileNode(std::string name, std::vector<std::string> node_paths,
                    std::vector<RequestGroup> req_sorted, std::size_t default_val_index,
-                   bool reset_on_init, bool truncate, bool hold_fd, bool write_only)
+                   bool reset_on_init, bool truncate, bool allow_failure, bool hold_fd, bool write_only)
     : Node(std::move(name), std::move(node_paths), std::move(req_sorted), default_val_index,
            reset_on_init),
       hold_fd_(hold_fd),
       truncate_(truncate),
       write_only_(write_only),
-      warn_timeout_(android::base::GetBoolProperty("ro.debuggable", false) ? 5ms : 50ms) {}
+      warn_timeout_(android::base::GetBoolProperty("ro.debuggable", false) ? 5ms : 50ms),
+      allow_failure_(allow_failure) {}
 
 std::chrono::milliseconds FileNode::Update(bool log_error) {
     std::size_t value_index = default_val_index_;
@@ -77,13 +79,15 @@ std::chrono::milliseconds FileNode::Update(bool log_error) {
             fd_.reset(TEMP_FAILURE_RETRY(open(path.c_str(), flags)));
 
             if (fd_ == -1 || !android::base::WriteStringToFd(req_value, fd_)) {
-                if (log_error) {
-                    LOG(WARNING) << "Failed to write to node: " << path
-                                << " with value: " << req_value << ", fd: " << fd_;
+                if (!allow_failure_ || fd_ != -1 || errno != ENOENT) {
+                    if (log_error) {
+                        LOG(WARNING) << "Failed to write to node: " << path
+                                    << " with value: " << req_value << ", fd: " << fd_;
+                    }
+                    // Retry in 500ms or sooner
+                    expire_time = std::min(expire_time, std::chrono::milliseconds(500));
+                    successfullyUpdated = false;
                 }
-                // Retry in 500ms or sooner
-                expire_time = std::min(expire_time, std::chrono::milliseconds(500));
-                successfullyUpdated = false;
             } else {
                 // For regular file system, we need fsync
                 fsync(fd_);
@@ -115,6 +119,10 @@ std::chrono::milliseconds FileNode::Update(bool log_error) {
     }
 
     return expire_time;
+}
+
+bool FileNode::GetAllowFailure() const {
+    return allow_failure_;
 }
 
 bool FileNode::GetHoldFd() const {
