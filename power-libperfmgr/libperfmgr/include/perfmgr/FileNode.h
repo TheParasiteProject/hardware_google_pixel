@@ -33,10 +33,11 @@ class FileNode : public Node {
   public:
     FileNode(std::string name, std::vector<std::string> node_paths,
              std::vector<RequestGroup> req_sorted, std::size_t default_val_index,
-             bool reset_on_init, bool truncate, bool hold_fd = false, bool write_only = false);
+             bool reset_on_init, bool truncate, bool allow_failure, bool hold_fd = false, bool write_only = false);
 
     std::chrono::milliseconds Update(bool log_error) override;
 
+    bool GetAllowFailure() const;
     bool GetHoldFd() const;
     bool GetTruncate() const;
 
@@ -52,6 +53,7 @@ class FileNode : public Node {
     const bool write_only_;
     const std::chrono::milliseconds warn_timeout_;
     android::base::unique_fd fd_;
+    bool allow_failure_;
 };
 
 }  // namespace perfmgr
