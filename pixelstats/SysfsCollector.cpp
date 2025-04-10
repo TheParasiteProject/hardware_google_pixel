@@ -941,6 +941,13 @@ void SysfsCollector::logF2fsSmartIdleMaintEnabled(const std::shared_ptr<IStats> 
 }
 
 void SysfsCollector::logDmVerityPartitionReadAmount(const std::shared_ptr<IStats> &stats_client) {
+    // Check if DmVerityPartitionReadAmount is false in the configuration.
+    std::string dmVerityValue = getCStringOrDefault(configData, "DmVerityPartitionReadAmount");
+    if (dmVerityValue == "false") {
+        ALOGV("DmVerityPartitionReadAmount is false, skipping.");
+        return; // Return directly if the flag is false.
+    }
+
     //  Array of partition names corresponding to the DmPartition enum.
     static constexpr std::array<std::string_view, 4>
         partitionNames = {"system", "system_ext", "product", "vendor"};
