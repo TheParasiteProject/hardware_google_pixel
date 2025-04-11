@@ -40,10 +40,10 @@ constexpr size_t kThrottlingSeverityCount =
                       ::ndk::enum_range<ThrottlingSeverity>().end());
 using ThrottlingArray = std::array<float, static_cast<size_t>(kThrottlingSeverityCount)>;
 using CdevArray = std::array<int, static_cast<size_t>(kThrottlingSeverityCount)>;
+using ::android::base::boot_clock;
 constexpr std::chrono::milliseconds kMinPollIntervalMs = std::chrono::milliseconds(2000);
+constexpr std::chrono::milliseconds kLogIntervalMs = std::chrono::milliseconds(60000);
 constexpr std::chrono::milliseconds kUeventPollTimeoutMs = std::chrono::milliseconds(300000);
-// TODO(b/292044404): Add debug config to make them easily configurable
-constexpr std::chrono::milliseconds kPowerLogIntervalMs = std::chrono::milliseconds(60000);
 constexpr int kMaxPowerLogPerLine = 6;
 // Max number of time_in_state buckets is 20 in atoms
 // VendorSensorCoolingDeviceStats, VendorTempResidencyStats
@@ -263,6 +263,12 @@ struct PowerRailInfo {
     std::unique_ptr<VirtualPowerRailInfo> virtual_power_rail_info;
 };
 
+struct LogStatus {
+    std::unordered_set<std::string> excluded_power_set;
+    std::chrono::milliseconds log_interval_ms = kLogIntervalMs;
+    boot_clock::time_point prev_log_time;
+};
+
 bool LoadThermalConfig(std::string_view config_path, Json::Value *config);
 bool ParseThermalConfig(std::string_view config_path, Json::Value *config,
                         std::unordered_set<std::string> *loaded_config_paths);
@@ -284,6 +290,8 @@ bool ParseCoolingDeviceStatsConfig(
         const Json::Value &config,
         const std::unordered_map<std::string, CdevInfo> &cooling_device_info_map_,
         StatsInfo<int> *cooling_device_request_info_parsed);
+
+void ParseThermalLogInfo(const Json::Value &config, LogStatus *log_status);
 }  // namespace implementation
 }  // namespace thermal
 }  // namespace hardware

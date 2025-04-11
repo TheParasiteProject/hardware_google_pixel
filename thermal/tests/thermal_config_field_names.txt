@@ -10,6 +10,7 @@ Combination
 CombinationType
 Configs
 CoolingDevices
+ExcludedPowerRailsLog
 Formula
 Hidden
 HotHysteresis
@@ -24,6 +25,8 @@ K_Po
 K_Pu
 LimitInfo
 LoggingName
+LogInfo
+LogIntervalMs
 MaxAllocPower
 MaxReleaseStep
 MaxThrottleStep

@@ -91,6 +91,9 @@ class ThermalThrottling {
                                       ThermalStatsHelper *thermal_stats_helper);
     // Get the aggregated (from all sensor) max request for a cooling device
     bool getCdevMaxRequest(std::string_view cdev_name, int *max_state);
+    // Print cooling device status
+    void logCoolingDeviceStatus(
+            const std::unordered_map<std::string, CdevInfo> &cooling_device_info_map);
 
   private:
     // Check if the thermal throttling profile need to be switched

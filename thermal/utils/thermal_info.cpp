@@ -276,6 +276,15 @@ bool ParseThermalConfig(std::string_view config_path, Json::Value *config,
                                    "RecordWithThreshold");
             }
         }
+        if (!sub_config["LogInfo"].empty()) {
+            if ((*config)["LogInfo"].empty()) {
+                (*config)["LogInfo"] = sub_config["LogInfo"];
+            } else {
+                MergeConfigEntries(&(*config)["LogInfo"], &sub_config["LogInfo"],
+                                   "ExcludedPowerRailsLog");
+                MergeConfigEntries(&(*config)["LogInfo"], &sub_config["LogInfo"], "LogIntervalMs");
+            }
+        }
     }
 
     return true;
@@ -1675,6 +1684,37 @@ bool ParseCoolingDevice(const Json::Value &config,
     }
     LOG(INFO) << total_parsed << " CoolingDevices parsed successfully";
     return true;
+}
+
+void ParseThermalLogInfo(const Json::Value &config, LogStatus *log_status) {
+    Json::Value log_info = config["LogInfo"];
+
+    if (log_info.empty()) {
+        LOG(VERBOSE) << "Empty loginfo";
+        return;
+    }
+
+    LOG(VERBOSE) << "Parse LogInfo Config";
+    Json::Value values;
+    if (!log_info["ExcludedPowerRailsLog"].empty()) {
+        values = log_info["ExcludedPowerRailsLog"];
+        for (Json::Value::ArrayIndex i = 0; i < values.size(); ++i) {
+            (*log_status).excluded_power_set.insert(values[i].asString());
+            LOG(INFO) << "ExcludedPowerRailsLog[" << i << "]'s Name: " << values[i].asString();
+        }
+    } else {
+        LOG(VERBOSE) << "Total Power rail exclude list is empty, use all power rails.";
+    }
+
+    if (!log_info["LogIntervalMs"].empty()) {
+        const auto value = getIntFromValue(log_info["LogIntervalMs"]);
+        if (value > 0) {
+            (*log_status).log_interval_ms = std::chrono::milliseconds(value);
+        }
+    }
+    LOG(INFO) << "Thermal log interval: " << (*log_status).log_interval_ms;
+
+    return;
 }
 
 bool ParsePowerRailInfo(
