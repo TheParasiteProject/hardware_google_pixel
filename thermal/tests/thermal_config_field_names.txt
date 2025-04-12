@@ -18,6 +18,7 @@ HotThreshold
 I_Cutoff
 I_Default
 I_Max
+I_Trend
 Include
 K_D
 K_I
@@ -57,6 +58,7 @@ Stats
 SupportPrediction
 SupportUnderSampling
 TempRange
+ThermalSampleCount
 Thresholds
 TimeResolution
 TriggerSensor
