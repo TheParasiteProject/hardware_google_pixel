@@ -1152,7 +1152,7 @@ ThrottlingSeverity ThermalHelperImpl::getSeverityReference(std::string_view sens
     for (size_t i = 0; i < severity_ref_sensors.size(); i++) {
         Temperature temp;
         if (readTemperature(severity_ref_sensors[i], &temp, false) != SensorReadStatus::OKAY) {
-            return ThrottlingSeverity::NONE;
+            continue;
         }
         LOG(VERBOSE) << sensor_name << "'s severity reference " << severity_ref_sensors[i]
                      << " reading:" << toString(temp.throttlingStatus);
