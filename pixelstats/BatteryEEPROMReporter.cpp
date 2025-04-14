@@ -386,14 +386,17 @@ void BatteryEEPROMReporter::checkAndReportFGLearning(const std::shared_ptr<IStat
 
     clock_gettime(CLOCK_MONOTONIC, &boot_time);
 
-    readLogbuffer(path, kNumFGLearningFieldsV3, params.checksum, format, last_lh_check_, events);
+    readLogbuffer(path, kNumFGLearningFieldsV4, params.checksum, format, last_lh_check_, events);
+    if (events.size() == 0)
+        readLogbuffer(path, kNumFGLearningFieldsV3, params.checksum, format, last_lh_check_, events);
     if (events.size() == 0)
         readLogbuffer(path, kNumFGLearningFieldsV2, params.checksum, format, last_lh_check_, events);
 
     for (int event_idx = 0; event_idx < events.size(); event_idx++) {
         std::vector<uint32_t> &event = events[event_idx];
         if (event.size() == kNumFGLearningFieldsV2 ||
-            event.size() == kNumFGLearningFieldsV3) {
+            event.size() == kNumFGLearningFieldsV3 ||
+            event.size() == kNumFGLearningFieldsV4) {
             params.full_cap = event[0];                /* fcnom */
             params.esr = event[1];                     /* dpacc */
             params.rslow = event[2];                   /* dqacc */
@@ -410,8 +413,14 @@ void BatteryEEPROMReporter::checkAndReportFGLearning(const std::shared_ptr<IStat
             params.cycle_cnt = event[13];              /* vfocf */
             params.rcomp0 = event[14];                 /* rcomp0 */
             params.tempco = event[15];                 /* tempco */
-            if (event.size() == kNumFGLearningFieldsV3)
+            if (event.size() >= kNumFGLearningFieldsV3)
                 params.soh = event[16];                /* unix time */
+            if (event.size() == kNumFGLearningFieldsV4) {
+                params.cutoff_soc = event[17];         /* cotrim */
+                params.cc_soc = event[18];             /* coff */
+                params.batt_temp = event[19];          /* lock_1 */
+                params.timer_h = event[20];            /* lock_2 */
+            }
         } else {
             ALOGE("Not support %zu fields for FG learning event", event.size());
             continue;
