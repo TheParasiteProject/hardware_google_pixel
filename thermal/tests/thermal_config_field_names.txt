@@ -36,8 +36,11 @@ Offset
 Outlier
 OutputLabelCount
 PassiveDelay
+PowerSampleCount
 PIDInfo
 PollingDelay
+PowerRails
+PowerSampleDelay
 PredictionDuration
 PreviousSampleCount
 RecordWithDefaultThreshold
@@ -57,5 +60,6 @@ TriggerSensor
 TripPointIgnorable
 Type
 Version
+VirtualRails
 VirtualSensor
 VrThreshold
