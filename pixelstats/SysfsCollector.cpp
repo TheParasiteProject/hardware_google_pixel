@@ -2312,12 +2312,14 @@ void SysfsCollector::logBrownout() {
     std::string brownoutCsvPath = getCStringOrDefault(configData, "BrownoutCsvPath");
     std::string brownoutLogPath = getCStringOrDefault(configData, "BrownoutLogPath");
     std::string brownoutReasonProp = getCStringOrDefault(configData, "BrownoutReasonProp");
-    if (brownoutCsvPath.empty())
+    if (!brownoutCsvPath.empty())
         brownout_detected_reporter_.logBrownoutCsv(stats_client, brownoutCsvPath.c_str(),
                                                    brownoutReasonProp);
-    else if (brownoutLogPath.empty())
+    else if (!brownoutLogPath.empty())
         brownout_detected_reporter_.logBrownout(stats_client, brownoutLogPath.c_str(),
                                                 brownoutReasonProp);
+    else
+        ALOGV("Brownout Csv and Log path are not specified in JSON");
 }
 
 void SysfsCollector::logWater() {
