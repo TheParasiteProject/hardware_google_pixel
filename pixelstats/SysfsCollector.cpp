@@ -69,6 +69,7 @@ using android::hardware::google::pixel::PixelAtoms::PartitionsUsedSpaceReported;
 using android::hardware::google::pixel::PixelAtoms::PcieLinkStatsReported;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsHealth;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsResetCount;
+using android::hardware::google::pixel::PixelAtoms::StorageUfsErrorCountReported;
 using android::hardware::google::pixel::PixelAtoms::ThermalDfsStats;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioAdaptedInfoStatsReported;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioBtMediaStatsReported;
@@ -595,37 +596,80 @@ void SysfsCollector::logUFSLifetime(const std::shared_ptr<IStats> &stats_client)
     }
 }
 
-void SysfsCollector::logUFSErrorStats(const std::shared_ptr<IStats> &stats_client) {
-    int value, host_reset_count = 0;
-
-    std::vector<std::string> UFSErrStatsPath = readStringVectorFromJson(configData["UFSErrStatsPath"]);
-
-    if (UFSErrStatsPath.empty() || strlen(UFSErrStatsPath.front().c_str()) == 0) {
-        ALOGV("UFS host reset count path not specified in JSON");
+void SysfsCollector::logUFSErrorsCount(const std::shared_ptr<IStats> &stats_client) {
+    std::string bootDevice = android::base::GetProperty("ro.boot.bootdevice", "");
+    if (bootDevice.empty()) {
+        ALOGW("ro.boot.bootdevice property is empty.");
         return;
     }
 
-    for (int i = 0; i < UFSErrStatsPath.size(); i++) {
-        if (!ReadFileToInt(UFSErrStatsPath[i], &value)) {
-            ALOGE("Unable to read host reset count");
-            return;
+    std::string baseUfsPath = "/sys/devices/platform/" + bootDevice + "/err_stats/";
+
+    static constexpr std::array<std::string_view, 13> errorNodes = {
+        "auto_hibern8_err_count",
+        "dev_reset_count",
+        "dl_err_count",
+        "dme_err_count",
+        "fatal_err_count",
+        "host_reset_count",
+        "link_startup_err_count",
+        "nl_err_count",
+        "pa_err_count",
+        "resume_err_count",
+        "suspend_err_count",
+        "task_abort_count",
+        "tl_err_count"
+    };
+
+    std::vector<VendorAtomValue> values(errorNodes.size());
+    std::vector<int32_t> counts(errorNodes.size());
+
+    for (size_t errorTypeIndex = 0; errorTypeIndex < errorNodes.size(); ++errorTypeIndex) {
+        std::string fullPath = baseUfsPath + std::string(errorNodes[errorTypeIndex]); // Convert string_view to string.
+
+        if (!ReadFileToInt(fullPath, &counts[errorTypeIndex])) {
+            ALOGE("Unable to read ufs error (%s): %s",
+                  std::string(errorNodes[errorTypeIndex]).c_str(), fullPath.c_str());
+            counts[errorTypeIndex] = 0;
         }
-        host_reset_count += value;
     }
 
     // Load values array
-    std::vector<VendorAtomValue> values(1);
-    VendorAtomValue tmp;
-    tmp.set<VendorAtomValue::intValue>(host_reset_count);
-    values[StorageUfsResetCount::kHostResetCountFieldNumber - kVendorAtomOffset] = tmp;
+    values[StorageUfsErrorCountReported::kAutoHibern8ErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[0]); // auto_hibern8_err_count
+    values[StorageUfsErrorCountReported::kDevResetCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[1]); // dev_reset_count
+    values[StorageUfsErrorCountReported::kDlErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[2]); // dl_err_count
+    values[StorageUfsErrorCountReported::kDmeErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[3]); // dme_err_count
+    values[StorageUfsErrorCountReported::kFatalErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[4]); // fatal_err_count
+    values[StorageUfsErrorCountReported::kHostResetCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[5]); // host_reset_count
+    values[StorageUfsErrorCountReported::kLinkStartupErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[6]); // link_startup_err_count
+    values[StorageUfsErrorCountReported::kNlErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[7]); // nl_err_count
+    values[StorageUfsErrorCountReported::kPaErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[8]); // pa_err_count
+    values[StorageUfsErrorCountReported::kResumeErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[9]); // resume_err_count
+    values[StorageUfsErrorCountReported::kSuspendErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[10]); // suspend_err_count
+    values[StorageUfsErrorCountReported::kTaskAbortCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[11]); // task_abort_count
+    values[StorageUfsErrorCountReported::kTlErrCountFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(counts[12]); // tl_err_count
 
     // Send vendor atom to IStats HAL
-    VendorAtom event = {.reverseDomainName = "",
-                        .atomId = PixelAtoms::Atom::kUfsResetCount,
+    VendorAtom event = {.reverseDomainName = PixelAtoms::ReverseDomainNames().pixel(),
+                        .atomId = PixelAtoms::Atom::kStorageUfsErrorCountReported,
                         .values = std::move(values)};
+
     const ndk::ScopedAStatus ret = stats_client->reportVendorAtom(event);
     if (!ret.isOk()) {
-        ALOGE("Unable to report UFS host reset count to Stats service");
+        ALOGE("Unable to report StorageUfsErrorCountReported to Stats service");
     }
 }
 
@@ -2278,7 +2322,7 @@ void SysfsCollector::logPerDay() {
     logSpeakerImpedance(stats_client);
     logSpeechDspStat(stats_client);
     logUFSLifetime(stats_client);
-    logUFSErrorStats(stats_client);
+    logUFSErrorsCount(stats_client);
     logSpeakerHealthStats(stats_client);
     mm_metrics_reporter_.logCmaStatus(stats_client);
     mm_metrics_reporter_.logPixelMmMetricsPerDay(stats_client);
