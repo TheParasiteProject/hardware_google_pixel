@@ -107,6 +107,9 @@ void HintManager::DoHintStatus(const std::string &hint_type, std::chrono::millis
     ATRACE_NAME(("H:" + hint_type + ":" + std::to_string((timeout_ms == kMilliSecondZero)
                                                    ? std::numeric_limits<int>::max()
                                                    : timeout_ms.count())).c_str());
+
+    actions_.at(hint_type).hint_count++;
+
     if (now > actions_.at(hint_type).status->end_time) {
         actions_.at(hint_type).status->stats.duration_ms.fetch_add(
                 std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -169,8 +172,11 @@ void HintManager::EndHintAction(const std::string &hint_type) {
     for (auto &action : actions_.at(hint_type).hint_actions) {
         if (action.type == HintActionType::MaskHint &&
             actions_.find(action.value) != actions_.end()) {
-            std::lock_guard<std::mutex> lock(actions_.at(hint_type).hint_lock);
             actions_.at(action.value).mask_requesters.erase(hint_type);
+        }
+        if (action.type == HintActionType::DoHint &&
+            actions_.find(action.value) != actions_.end()) {
+            EndHint(action.value);
         }
     }
 }
@@ -206,10 +212,28 @@ bool HintManager::DoHint(const std::string& hint_type,
 }
 
 bool HintManager::EndHint(const std::string& hint_type) {
-    LOG(VERBOSE) << "End Powerhint: " << hint_type;
-    if (!ValidateHint(hint_type) || !nm_->Cancel(actions_.at(hint_type).node_actions, hint_type)) {
+    if (!ValidateHint(hint_type)) {
         return false;
     }
+
+    {
+        std::lock_guard<std::mutex> lock(actions_.at(hint_type).hint_lock);
+        //TODO: handle the case when hint is never explicitly ended. b/411043661
+        actions_.at(hint_type).hint_count--;
+
+        if (actions_.at(hint_type).hint_count > 0) {
+            LOG(VERBOSE) << "End Powerhint: " << hint_type << "invoke count haven't reached 0.";
+            return true;
+        }
+
+        actions_.at(hint_type).hint_count = 0;
+    }
+
+    LOG(VERBOSE) << "End Powerhint: " << hint_type;
+    if (!nm_->Cancel(actions_.at(hint_type).node_actions, hint_type)) {
+        return false;
+    }
+
     EndHintStatus(hint_type);
     EndHintAction(hint_type);
     return true;

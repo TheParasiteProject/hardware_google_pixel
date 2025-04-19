@@ -10,6 +10,7 @@ Combination
 CombinationType
 Configs
 CoolingDevices
+ExcludedPowerRailsLog
 Formula
 Hidden
 HotHysteresis
@@ -24,6 +25,8 @@ K_Po
 K_Pu
 LimitInfo
 LoggingName
+LogInfo
+LogIntervalMs
 MaxAllocPower
 MaxReleaseStep
 MaxThrottleStep
@@ -36,8 +39,11 @@ Offset
 Outlier
 OutputLabelCount
 PassiveDelay
+PowerSampleCount
 PIDInfo
 PollingDelay
+PowerRails
+PowerSampleDelay
 PredictionDuration
 PreviousSampleCount
 RecordWithDefaultThreshold
@@ -57,5 +63,6 @@ TriggerSensor
 TripPointIgnorable
 Type
 Version
+VirtualRails
 VirtualSensor
 VrThreshold

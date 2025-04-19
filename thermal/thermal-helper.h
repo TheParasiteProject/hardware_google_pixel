@@ -245,6 +245,7 @@ class ThermalHelperImpl : public ThermalHelper {
     ThrottlingSeverity getSeverityReference(std::string_view sensor_name);
 
     sp<ThermalWatcher> thermal_watcher_;
+    LogStatus log_status_;
     PowerFiles power_files_;
     ThermalFiles thermal_sensors_;
     ThermalFiles cooling_devices_;

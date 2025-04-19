@@ -5,3 +5,5 @@ ifeq ($(USES_ALCEDO_MODEM),true)
 PRODUCT_PACKAGES += ConnectivityThermalPowerManagerNextgen
 PRODUCT_PACKAGES_DEBUG += mipc_util
 endif
+
+PRODUCT_PACKAGES += preinstalled_packages_connectivity_thermal_power_manager.xml

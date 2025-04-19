@@ -194,6 +194,9 @@ ThermalHelperImpl::ThermalHelperImpl(const NotificationCallback &cb)
         ret = false;
     }
 
+    ParseThermalLogInfo(config, &log_status_);
+    log_status_.prev_log_time = boot_clock::now();
+
     auto cdev_map = parseThermalPathMap(kCoolingDevicePrefix.data());
     auto powercap_map = parsePowerCapPathMap();
 
@@ -1746,10 +1749,13 @@ std::chrono::milliseconds ThermalHelperImpl::thermalWatcherCallbackFunc(
         LOG(ERROR) << "Failed to report " << count_failed_reporting << " thermal stats";
     }
 
-    const auto since_last_power_log_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            now - power_files_.GetPrevPowerLogTime());
-    if ((since_last_power_log_ms >= kPowerLogIntervalMs) || (shutdown_severity_reached)) {
-        power_files_.logPowerStatus(now);
+    const auto since_last_log_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(now - log_status_.prev_log_time);
+
+    if (since_last_log_ms >= log_status_.log_interval_ms || (shutdown_severity_reached)) {
+        power_files_.logPowerStatus(log_status_.excluded_power_set);
+        thermal_throttling_.logCoolingDeviceStatus(cooling_device_info_map_);
+        log_status_.prev_log_time = now;
     }
 
     return min_sleep_ms;
