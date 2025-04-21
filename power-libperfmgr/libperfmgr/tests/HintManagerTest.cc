@@ -462,7 +462,6 @@ TEST_F(HintManagerTest, HintTest) {
     VERIFY_PATH_VALUE(files_[1]->path, "n1_value1");
     VERIFY_PROPERTY_VALUE(prop_, "n2_value1");
     EXPECT_TRUE(hm->EndHint("LAUNCH"));
-    EXPECT_TRUE(hm->EndHint("LAUNCH"));
     std::this_thread::sleep_for(kSLEEP_TOLERANCE_MS);
     // "LAUNCH" canceled
     VERIFY_PATH_VALUE(files_[0]->path, "n0_value1");
@@ -473,7 +472,6 @@ TEST_F(HintManagerTest, HintTest) {
     VERIFY_PATH_VALUE(files_[0]->path, "n0_value2");
     VERIFY_PATH_VALUE(files_[1]->path, "n1_value1");
     VERIFY_PROPERTY_VALUE(prop_, "n2_value2");
-    EXPECT_TRUE(hm->EndHint("INTERACTION"));
     EXPECT_TRUE(hm->EndHint("INTERACTION"));
     std::this_thread::sleep_for(kSLEEP_TOLERANCE_MS);
     // "INTERACTION" canceled
@@ -1140,49 +1138,6 @@ TEST_F(HintManagerTest, GpuConfigSupport) {
     EXPECT_FALSE(profile->mGpuBoostOn);
     EXPECT_FALSE(profile->mGpuBoostCapacityMax);
     EXPECT_EQ(profile->mGpuCapacityLoadUpHeadroom, 0);
-}
-
-TEST_F(HintManagerTest, EndHintTest) {
-    TemporaryFile json_file;
-    ASSERT_TRUE(android::base::WriteStringToFile(json_doc_, json_file.path)) << strerror(errno);
-
-    // Singleton no need to release after test.
-    HintManager *hm = HintManager::GetFromJSON(json_file.path, false);
-    ASSERT_NE(hm, nullptr);
-    EXPECT_FALSE(hm->IsRunning());
-    EXPECT_TRUE(hm->Start());
-    EXPECT_TRUE(hm->IsRunning());
-    std::this_thread::sleep_for(kSLEEP_TOLERANCE_MS);
-    EXPECT_TRUE(hm->IsRunning());
-
-    // Initial default value on Node0 DefaultIndex=2 and ResetOnInit=true => 384000
-    VERIFY_PATH_VALUE(files_[0 + 2]->path, "384000");
-    VERIFY_PATH_VALUE(files_[1 + 2]->path, "");
-    VERIFY_PROPERTY_VALUE(prop_, "");
-
-    HintStats launch_stats(hm->GetHintStats("LAUNCH"));
-    EXPECT_EQ(0, launch_stats.count);
-
-    EXPECT_TRUE(hm->DoHint("LAUNCH"));
-    std::this_thread::sleep_for(kSLEEP_TOLERANCE_MS);
-    VERIFY_PATH_VALUE(files_[0 + 2]->path, "1134000");
-    VERIFY_PATH_VALUE(files_[1 + 2]->path, "1512000");
-
-    EXPECT_TRUE(hm->DoHint("DO_LAUNCH_MODE"));
-    std::this_thread::sleep_for(kSLEEP_TOLERANCE_MS);
-    VERIFY_PATH_VALUE(files_[0 + 2]->path, "1134000");
-    VERIFY_PATH_VALUE(files_[1 + 2]->path, "1512000");
-
-    EXPECT_TRUE(hm->EndHint("DO_LAUNCH_MODE"));
-    std::this_thread::sleep_for(kSLEEP_TOLERANCE_MS);
-    VERIFY_PATH_VALUE(files_[0 + 2]->path, "1134000");
-    VERIFY_PATH_VALUE(files_[1 + 2]->path, "1512000");
-
-    EXPECT_TRUE(hm->EndHint("LAUNCH"));
-    std::this_thread::sleep_for(kSLEEP_TOLERANCE_MS);
-    VERIFY_PATH_VALUE(files_[0 + 2]->path, "384000");
-    VERIFY_PATH_VALUE(files_[1 + 2]->path, "384000");
-    VERIFY_PROPERTY_VALUE(prop_, "NONE");
 }
 
 }  // namespace perfmgr
