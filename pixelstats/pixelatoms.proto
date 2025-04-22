@@ -148,6 +148,7 @@ message Atom {
       PowerFifoDump power_fifo_dump = 105093 [(android.os.statsd.module) = "pixelpower"];
       GnssTtffReported gnss_ttff_reported = 105094 [(android.os.statsd.module) = "pixelgnss"];
       StorageUfsErrorCountReported storage_ufs_error_count_reported = 105095;
+      UfsStorageTypeReported ufs_storage_type_reported = 105096;
     }
     // AOSP atom ID range ends at 109999
     reserved 109997; // reserved for VtsVendorAtomJavaTest test atom
@@ -3599,4 +3600,26 @@ message StorageUfsErrorCountReported {
   optional int32 task_abort_count = 13;
   /* Number of tl_err_count read from the ufs err_stats */
   optional int32 tl_err_count = 14;
+}
+
+/*
+ * Collects and reports UFS storage type, ZUFS or legacy.
+ * Logged from:
+ *   hardware/google/pixel/pixelstats/SysfsCollector.cpp
+ *
+ * Estimated Logging Rate:
+ * Peak: 1 times in 24 hours | Avg: 1 times per device per day
+ */
+message UfsStorageTypeReported {
+  /* Vendor reverse domain name */
+  optional string reverse_domain_name = 1;
+
+  enum UfsType {
+    UNKNOWN = 0;
+    CONVENTIONAL = 1;
+    ZUFS = 2;
+  }
+
+  /* ZUFS type is provisioned */
+  optional UfsType ufs_type = 2;
 }
