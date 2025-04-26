@@ -74,14 +74,12 @@ struct Hint {
         : node_actions(obj.node_actions),
           hint_actions(obj.hint_actions),
           mask_requesters(obj.mask_requesters),
-          status(obj.status),
-          hint_count(0) {}
+          status(obj.status) {}
     std::vector<NodeAction> node_actions;
     std::vector<HintAction> hint_actions;
     mutable std::mutex hint_lock;
     std::set<std::string> mask_requesters GUARDED_BY(hint_lock);
     std::shared_ptr<HintStatus> status GUARDED_BY(hint_lock);
-    int32_t hint_count GUARDED_BY(hint_lock);
 };
 
 // HintManager is the external interface of the library to be used by PowerHAL

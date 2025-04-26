@@ -57,7 +57,7 @@ float getFloatFromValue(const Json::Value &value) {
 
 int getIntFromValue(const Json::Value &value) {
     if (value.isString()) {
-        return (value.asString() == "max") ? std::numeric_limits<int>::max()
+        return (value.asString() == "MAX") ? std::numeric_limits<int>::max()
                                            : std::stoul(value.asString());
     } else {
         return value.asInt();
