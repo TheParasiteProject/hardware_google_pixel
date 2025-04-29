@@ -90,8 +90,8 @@ using android::hardware::google::pixel::PixelAtoms::WaterEventReported;
 using android::hardware::google::pixel::PixelAtoms::ZramBdStat;
 using android::hardware::google::pixel::PixelAtoms::ZramMmStat;
 
-SysfsCollector::SysfsCollector(const Json::Value& configData)
-    : configData(configData) {}
+SysfsCollector::SysfsCollector(const Json::Value &configData)
+    : configData(configData), thermal_stats_reporter_(configData) {}
 
 bool SysfsCollector::ReadFileToInt(const std::string &path, int *val) {
     return ReadFileToInt(path.c_str(), val);
@@ -460,6 +460,9 @@ void SysfsCollector::logThermalStats(const std::shared_ptr<IStats> &stats_client
     std::vector<std::string> thermalStatsPaths =
         readStringVectorFromJson(configData["ThermalStatsPaths"]);
     thermal_stats_reporter_.logThermalDfsStats(stats_client, thermalStatsPaths);
+
+    //************** Tj trip count monitoring. ***********************//
+    thermal_stats_reporter_.logTjTripCountStats(stats_client);
 }
 
 void SysfsCollector::logDisplayPortDSCStats(const std::shared_ptr<IStats> &stats_client) {
