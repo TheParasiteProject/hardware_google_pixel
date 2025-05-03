@@ -53,6 +53,8 @@ class BatteryEEPROMReporter {
     const int kNumFGLearningFieldsV2 = 16;
     /* with additional unix time field */
     const int kNumFGLearningFieldsV3 = 17;
+    /* with COTRIM/COFF/LOCK fields */
+    const int kNumFGLearningFieldsV4 = 21;
     unsigned int last_lh_check_ = 0;
     /* The number of elements for history validation event */
     const int kNumValidationFields = 4;
