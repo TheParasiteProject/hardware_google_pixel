@@ -241,12 +241,21 @@ ThermalHelperImpl::ThermalHelperImpl(const NotificationCallback &cb)
     }
 
     for (auto &[sensor_name, sensor_info] : sensor_info_map_) {
+        std::vector<bool> count_threshold_counted;
+
+        if (sensor_info.virtual_sensor_info != nullptr &&
+            sensor_info.virtual_sensor_info->formula == FormulaOption::COUNT_THRESHOLD) {
+            count_threshold_counted.resize(sensor_info.virtual_sensor_info->coefficients.size());
+            std::fill(count_threshold_counted.begin(), count_threshold_counted.end(), false);
+        }
+
         sensor_status_map_[sensor_name] = {
                 .severity = ThrottlingSeverity::NONE,
                 .prev_hot_severity = ThrottlingSeverity::NONE,
                 .prev_cold_severity = ThrottlingSeverity::NONE,
                 .last_update_time = boot_clock::time_point::min(),
                 .thermal_cached = {NAN, boot_clock::time_point::min()},
+                .count_threshold_counted = count_threshold_counted,
                 .pending_notification = false,
                 .override_status = {nullptr, false, false},
         };
@@ -1425,7 +1434,6 @@ SensorReadStatus ThermalHelperImpl::readThermalSensor(
         std::map<std::string, float> *sensor_log_map) {
     std::string file_reading;
     boot_clock::time_point now = boot_clock::now();
-
     ATRACE_NAME(StringPrintf("ThermalHelper::readThermalSensor - %s", sensor_name.data()).c_str());
     if (!(sensor_info_map_.count(sensor_name.data()) &&
           sensor_status_map_.count(sensor_name.data()))) {
@@ -1468,6 +1476,7 @@ SensorReadStatus ThermalHelperImpl::readThermalSensor(
         *temp = std::atof(::android::base::Trim(file_reading).c_str());
     } else {
         const auto &linked_sensors_size = sensor_info.virtual_sensor_info->linked_sensors.size();
+        std::vector<bool> count_threshold_counted(linked_sensors_size, false);
         std::vector<float> sensor_readings(linked_sensors_size, NAN);
 
         // Calculate temperature of each of the linked sensor
@@ -1517,9 +1526,27 @@ SensorReadStatus ThermalHelperImpl::readThermalSensor(
                 }
                 switch (sensor_info.virtual_sensor_info->formula) {
                     case FormulaOption::COUNT_THRESHOLD:
-                        if ((coefficient < 0 && sensor_readings[i] < -coefficient) ||
-                            (coefficient >= 0 && sensor_readings[i] >= coefficient))
-                            temp_val += 1;
+                        if (coefficient < 0) {
+                            if (sensor_status.count_threshold_counted[i]) {
+                                coefficient +=
+                                        sensor_info.virtual_sensor_info->count_threshold_hyst[i];
+                            }
+
+                            if (sensor_readings[i] < -coefficient) {
+                                temp_val += 1;
+                                count_threshold_counted[i] = true;
+                            }
+                        } else {
+                            if (sensor_status.count_threshold_counted[i]) {
+                                coefficient -=
+                                        sensor_info.virtual_sensor_info->count_threshold_hyst[i];
+                            }
+
+                            if (sensor_readings[i] >= coefficient) {
+                                temp_val += 1;
+                                count_threshold_counted[i] = true;
+                            }
+                        }
                         break;
                     case FormulaOption::WEIGHTED_AVG:
                         temp_val += sensor_readings[i] * coefficient;
@@ -1542,6 +1569,10 @@ SensorReadStatus ThermalHelperImpl::readThermalSensor(
                 }
             }
             *temp = (temp_val + sensor_info.virtual_sensor_info->offset);
+            if (sensor_info.virtual_sensor_info->formula == FormulaOption::COUNT_THRESHOLD) {
+                std::unique_lock<std::shared_mutex> _lock(sensor_status_map_mutex_);
+                sensor_status.count_threshold_counted = count_threshold_counted;
+            }
         }
     }
 

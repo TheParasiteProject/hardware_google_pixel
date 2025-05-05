@@ -144,7 +144,7 @@ struct VirtualSensorInfo {
     std::vector<SensorFusionType> linked_sensors_type;
     std::vector<std::string> coefficients;
     std::vector<SensorFusionType> coefficients_type;
-
+    std::vector<float> count_threshold_hyst;
     float offset;
     std::vector<std::string> trigger_sensors;
     FormulaOption formula;

@@ -346,6 +346,7 @@ bool ParseVirtualSensorInfo(const std::string_view name, const Json::Value &sens
     std::vector<SensorFusionType> linked_sensors_type;
     std::vector<std::string> trigger_sensors;
     std::vector<std::string> coefficients;
+    std::vector<float> count_threshold_hyst;
     std::vector<SensorFusionType> coefficients_type;
     FormulaOption formula = FormulaOption::COUNT_THRESHOLD;
     std::string vt_estimator_model_file;
@@ -430,6 +431,24 @@ bool ParseVirtualSensorInfo(const std::string_view name, const Json::Value &sens
         (formula != FormulaOption::PREVIOUSLY_PREDICTED)) {
         LOG(ERROR) << "Sensor[" << name << "] has invalid Coefficient size";
         return false;
+    }
+
+    values = sensor["CountThresholdHysteresis"];
+    if (!values.size()) {
+        count_threshold_hyst.reserve(linked_sensors.size());
+        for (size_t j = 0; j < linked_sensors.size(); ++j) {
+            count_threshold_hyst.emplace_back(0.0);
+        }
+    } else if (values.size() != linked_sensors.size()) {
+        LOG(ERROR) << "Sensor[" << name << "] has invalid CountThresholdHysteresis size";
+        return false;
+    } else if (values.size() && formula == FormulaOption::COUNT_THRESHOLD) {
+        count_threshold_hyst.reserve(values.size());
+        for (Json::Value::ArrayIndex j = 0; j < values.size(); ++j) {
+            count_threshold_hyst.emplace_back(values[j].asFloat());
+            LOG(INFO) << "Sensor[" << name << "]'s CountThresholdHysteresis[" << j
+                      << "]: " << count_threshold_hyst[j];
+        }
     }
 
     values = sensor["CoefficientType"];
@@ -617,10 +636,10 @@ bool ParseVirtualSensorInfo(const std::string_view name, const Json::Value &sens
                   << "] with input samples: " << linked_sensors.size();
     }
 
-    virtual_sensor_info->reset(
-            new VirtualSensorInfo{linked_sensors, linked_sensors_type, coefficients,
-                                  coefficients_type, offset, trigger_sensors, formula,
-                                  vt_estimator_model_file, std::move(vt_estimator), backup_sensor});
+    virtual_sensor_info->reset(new VirtualSensorInfo{
+            linked_sensors, linked_sensors_type, coefficients, coefficients_type,
+            count_threshold_hyst, offset, trigger_sensors, formula, vt_estimator_model_file,
+            std::move(vt_estimator), backup_sensor});
     return true;
 }
 
