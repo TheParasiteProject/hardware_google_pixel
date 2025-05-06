@@ -165,9 +165,9 @@ void SysfsCollector::logBatteryChargeCycles(const std::shared_ptr<IStats> &stats
 void SysfsCollector::logBatteryEEPROM(const std::shared_ptr<IStats> &stats_client) {
     std::string EEPROMPath = getCStringOrDefault(configData, "EEPROMPath");
     std::vector<std::string> GMSRPath = readStringVectorFromJson(configData["GMSRPath"]);
-    std::string maxfgHistoryPath = getCStringOrDefault(configData, "MaxfgHistoryPath");
     std::vector<std::string> FGModelLoadingPath = readStringVectorFromJson(configData["FGModelLoadingPath"]);
     std::vector<std::string> FGLogBufferPath = readStringVectorFromJson(configData["FGLogBufferPath"]);
+    std::string maxfgHistoryPath = "/dev/maxfg_history";
 
     if (EEPROMPath.empty()) {
         ALOGV("Battery EEPROM path not specified in JSON");
