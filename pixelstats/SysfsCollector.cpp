@@ -70,7 +70,6 @@ using android::hardware::google::pixel::PixelAtoms::PcieLinkStatsReported;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsHealth;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsResetCount;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsErrorCountReported;
-using android::hardware::google::pixel::PixelAtoms::ThermalDfsStats;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioAdaptedInfoStatsReported;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioBtMediaStatsReported;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioHardwareStatsReported;
@@ -91,8 +90,8 @@ using android::hardware::google::pixel::PixelAtoms::WaterEventReported;
 using android::hardware::google::pixel::PixelAtoms::ZramBdStat;
 using android::hardware::google::pixel::PixelAtoms::ZramMmStat;
 
-SysfsCollector::SysfsCollector(const Json::Value& configData)
-    : configData(configData) {}
+SysfsCollector::SysfsCollector(const Json::Value &configData)
+    : configData(configData), thermal_stats_reporter_(configData) {}
 
 bool SysfsCollector::ReadFileToInt(const std::string &path, int *val) {
     return ReadFileToInt(path.c_str(), val);
@@ -457,9 +456,13 @@ void SysfsCollector::logHDCPStats(const std::shared_ptr<IStats> &stats_client) {
 }
 
 void SysfsCollector::logThermalStats(const std::shared_ptr<IStats> &stats_client) {
+    //**************** Legacy dfs stats monitoring. ************************//
     std::vector<std::string> thermalStatsPaths =
         readStringVectorFromJson(configData["ThermalStatsPaths"]);
-    thermal_stats_reporter_.logThermalStats(stats_client, thermalStatsPaths);
+    thermal_stats_reporter_.logThermalDfsStats(stats_client, thermalStatsPaths);
+
+    //************** Tj trip count monitoring. ***********************//
+    thermal_stats_reporter_.logTjTripCountStats(stats_client);
 }
 
 void SysfsCollector::logDisplayPortDSCStats(const std::shared_ptr<IStats> &stats_client) {
