@@ -1734,12 +1734,16 @@ std::chrono::milliseconds ThermalHelperImpl::thermalWatcherCallbackFunc(
             }
 
             float dt_per_min = NAN;
-            {
+            if (sensor_info.thermal_sample_count) {
                 std::unique_lock<std::shared_mutex> _lock(sensor_status_map_mutex_);
                 ThermalSample curr_sample = {temp.value, now};
                 dt_per_min = getThermalRising(sensor_status, curr_sample);
-                sensor_status.thermal_history.pop();
-                sensor_status.thermal_history.push(curr_sample);
+                if (sensor_status.thermal_history.size()) {
+                    sensor_status.thermal_history.pop();
+                    sensor_status.thermal_history.push(curr_sample);
+                } else {
+                    LOG(ERROR) << "Sensor " << name_status_pair.first << ": thermal_history size should not be zero";
+                }
             }
 
             // update thermal throttling request
