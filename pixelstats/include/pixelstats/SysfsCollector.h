@@ -106,6 +106,7 @@ class SysfsCollector {
     void logBatteryGMSR(const std::shared_ptr<IStats> &stats_client);
     void logDmVerityPartitionReadAmount(const std::shared_ptr<IStats> &stats_client);
     void logBatteryHistoryValidation();
+    void logUfsStorageType();
 
     BatteryEEPROMReporter battery_EEPROM_reporter_;
     MmMetricsReporter mm_metrics_reporter_;
