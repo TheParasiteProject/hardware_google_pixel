@@ -981,6 +981,8 @@ bool ParseSensorThrottlingInfo(
     s_power.fill(NAN);
     std::array<float, kThrottlingSeverityCount> i_cutoff;
     i_cutoff.fill(NAN);
+
+    float i_trend = NAN;
     float i_default = 0.0;
     float i_default_pct = NAN;
     int tran_cycle = 0;
@@ -1077,6 +1079,11 @@ bool ParseSensorThrottlingInfo(
             !sensor["PIDInfo"]["I_Default_Pct"].empty()) {
             LOG(ERROR) << "I_Default and I_Default_P cannot be applied together";
             return false;
+        }
+
+        if (!sensor["PIDInfo"]["I_Trend"].empty()) {
+            i_trend = getFloatFromValue(sensor["PIDInfo"]["I_Trend"]);
+            LOG(INFO) << "Sensor[" << name << "]'s I_Trend: " << i_trend;
         }
 
         if (!sensor["PIDInfo"]["I_Default"].empty()) {
@@ -1182,10 +1189,10 @@ bool ParseSensorThrottlingInfo(
         }
         excluded_power_info_map[power_rail] = power_weight;
     }
-    throttling_info->reset(new ThrottlingInfo{k_po, k_pu, k_io, k_iu, k_d, i_max, max_alloc_power,
-                                              min_alloc_power, s_power, i_cutoff, i_default,
-                                              i_default_pct, tran_cycle, excluded_power_info_map,
-                                              binded_cdev_info_map, profile_map});
+    throttling_info->reset(
+            new ThrottlingInfo{k_po, k_pu, k_io, k_iu, k_d, i_max, max_alloc_power, min_alloc_power,
+                               s_power, i_cutoff, i_trend, i_default, i_default_pct, tran_cycle,
+                               excluded_power_info_map, binded_cdev_info_map, profile_map});
     *support_throttling = support_pid | support_hard_limit;
     return true;
 }
@@ -1566,6 +1573,12 @@ bool ParseSensorInfo(const Json::Value &config,
         bool is_watch = (send_cb | send_powerhint | support_throttling);
         LOG(INFO) << "Sensor[" << name << "]'s is_watch: " << std::boolalpha << is_watch;
 
+        int thermal_sample_count = 0;
+        if (!sensors[i]["ThermalSampleCount"].empty()) {
+            thermal_sample_count = std::max(0, getIntFromValue(sensors[i]["ThermalSampleCount"]));
+        }
+        LOG(INFO) << "Sensor[" << name << "]'s ThermalSampleCount: " << thermal_sample_count;
+
         (*sensors_parsed)[name] = {
                 .type = sensor_type,
                 .hot_thresholds = hot_thresholds,
@@ -1589,6 +1602,7 @@ bool ParseSensorInfo(const Json::Value &config,
                 .virtual_sensor_info = std::move(virtual_sensor_info),
                 .throttling_info = std::move(throttling_info),
                 .predictor_info = std::move(predictor_info),
+                .thermal_sample_count = thermal_sample_count,
         };
 
         ++total_parsed;

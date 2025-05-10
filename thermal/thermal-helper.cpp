@@ -251,6 +251,11 @@ ThermalHelperImpl::ThermalHelperImpl(const NotificationCallback &cb)
                 .override_status = {nullptr, false, false},
         };
 
+        for (int i = 0; i < sensor_info.thermal_sample_count; i++) {
+            sensor_status_map_[sensor_name].thermal_history.push(
+                    {NAN, boot_clock::time_point::min()});
+        }
+
         if (sensor_info.throttling_info != nullptr) {
             if (!thermal_throttling_.registerThermalThrottling(
                         sensor_name, sensor_info.throttling_info, cooling_device_info_map_)) {
@@ -1394,6 +1399,25 @@ bool ThermalHelperImpl::readTemperaturePredictions(std::string_view sensor_name,
     return true;
 }
 
+// return thermal rising trend per min
+float ThermalHelperImpl::getThermalRising(const SensorStatus &sensor_status,
+                                          const ThermalSample &curr_sample) {
+    static constexpr int kMsecPerMin = 60000;
+    if (sensor_status.thermal_history.size() == 0) {
+        return NAN;
+    }
+    const auto last_sample = sensor_status.thermal_history.front();
+    if (std::isnan(last_sample.temp) || curr_sample.timestamp <= last_sample.timestamp) {
+        return NAN;
+    }
+
+    return (curr_sample.temp - last_sample.temp) /
+           std::chrono::duration_cast<std::chrono::milliseconds>(curr_sample.timestamp -
+                                                                 last_sample.timestamp)
+                   .count() *
+           kMsecPerMin;
+}
+
 constexpr int kTranTimeoutParam = 2;
 
 SensorReadStatus ThermalHelperImpl::readThermalSensor(
@@ -1709,11 +1733,24 @@ std::chrono::milliseconds ThermalHelperImpl::thermalWatcherCallbackFunc(
                 }
             }
 
+            float dt_per_min = NAN;
+            if (sensor_info.thermal_sample_count) {
+                std::unique_lock<std::shared_mutex> _lock(sensor_status_map_mutex_);
+                ThermalSample curr_sample = {temp.value, now};
+                dt_per_min = getThermalRising(sensor_status, curr_sample);
+                if (sensor_status.thermal_history.size()) {
+                    sensor_status.thermal_history.pop();
+                    sensor_status.thermal_history.push(curr_sample);
+                } else {
+                    LOG(ERROR) << "Sensor " << name_status_pair.first << ": thermal_history size should not be zero";
+                }
+            }
+
             // update thermal throttling request
             thermal_throttling_.thermalThrottlingUpdate(
                     temp, sensor_info, sensor_status.severity, time_elapsed_ms,
                     power_files_.GetPowerStatusMap(), cooling_device_info_map_, max_throttling,
-                    sensor_predictions);
+                    sensor_predictions, dt_per_min);
         }
 
         thermal_throttling_.computeCoolingDevicesRequest(

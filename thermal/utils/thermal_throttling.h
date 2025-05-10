@@ -82,7 +82,8 @@ class ThermalThrottling {
             const std::unordered_map<std::string, PowerStatus> &power_status_map,
             const std::unordered_map<std::string, CdevInfo> &cooling_device_info_map,
             const bool max_throttling = false,
-            const std::vector<float> &sensor_predictions = std::vector<float>{});
+            const std::vector<float> &sensor_predictions = std::vector<float>{},
+            const float dt_per_min = NAN);
 
     // Compute the throttling target from all the sensors' request
     void computeCoolingDevicesRequest(std::string_view sensor_name, const SensorInfo &sensor_info,
@@ -105,7 +106,8 @@ class ThermalThrottling {
             std::chrono::milliseconds time_elapsed_ms, ThrottlingSeverity curr_severity,
             const bool max_throttling,
             const std::unordered_map<std::string, PowerStatus> &power_status_map,
-            const std::vector<float> &sensor_predictions = std::vector<float>{});
+            const std::vector<float> &sensor_predictions = std::vector<float>{},
+            const float dt_per_min = NAN);
 
     // PID algo - return the power number from excluded power rail list
     float computeExcludedPower(const SensorInfo &sensor_info,
@@ -119,7 +121,8 @@ class ThermalThrottling {
             const ThrottlingSeverity curr_severity, const std::chrono::milliseconds time_elapsed_ms,
             const std::unordered_map<std::string, PowerStatus> &power_status_map,
             const std::unordered_map<std::string, CdevInfo> &cooling_device_info_map,
-            const bool max_throttling, const std::vector<float> &sensor_predictions);
+            const bool max_throttling, const std::vector<float> &sensor_predictions,
+            const float dt_per_min = NAN);
     // PID algo - map the target throttling state according to the power budget
     void updateCdevRequestByPower(
             std::string sensor_name,

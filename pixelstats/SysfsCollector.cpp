@@ -70,7 +70,6 @@ using android::hardware::google::pixel::PixelAtoms::PcieLinkStatsReported;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsHealth;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsResetCount;
 using android::hardware::google::pixel::PixelAtoms::StorageUfsErrorCountReported;
-using android::hardware::google::pixel::PixelAtoms::ThermalDfsStats;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioAdaptedInfoStatsReported;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioBtMediaStatsReported;
 using android::hardware::google::pixel::PixelAtoms::VendorAudioHardwareStatsReported;
@@ -90,9 +89,10 @@ using android::hardware::google::pixel::PixelAtoms::VendorTempResidencyStats;
 using android::hardware::google::pixel::PixelAtoms::WaterEventReported;
 using android::hardware::google::pixel::PixelAtoms::ZramBdStat;
 using android::hardware::google::pixel::PixelAtoms::ZramMmStat;
+using android::hardware::google::pixel::PixelAtoms::UfsStorageTypeReported;
 
-SysfsCollector::SysfsCollector(const Json::Value& configData)
-    : configData(configData) {}
+SysfsCollector::SysfsCollector(const Json::Value &configData)
+    : configData(configData), thermal_stats_reporter_(configData) {}
 
 bool SysfsCollector::ReadFileToInt(const std::string &path, int *val) {
     return ReadFileToInt(path.c_str(), val);
@@ -165,9 +165,9 @@ void SysfsCollector::logBatteryChargeCycles(const std::shared_ptr<IStats> &stats
 void SysfsCollector::logBatteryEEPROM(const std::shared_ptr<IStats> &stats_client) {
     std::string EEPROMPath = getCStringOrDefault(configData, "EEPROMPath");
     std::vector<std::string> GMSRPath = readStringVectorFromJson(configData["GMSRPath"]);
-    std::string maxfgHistoryPath = getCStringOrDefault(configData, "MaxfgHistoryPath");
     std::vector<std::string> FGModelLoadingPath = readStringVectorFromJson(configData["FGModelLoadingPath"]);
     std::vector<std::string> FGLogBufferPath = readStringVectorFromJson(configData["FGLogBufferPath"]);
+    std::string maxfgHistoryPath = "/dev/maxfg_history";
 
     if (EEPROMPath.empty()) {
         ALOGV("Battery EEPROM path not specified in JSON");
@@ -457,9 +457,13 @@ void SysfsCollector::logHDCPStats(const std::shared_ptr<IStats> &stats_client) {
 }
 
 void SysfsCollector::logThermalStats(const std::shared_ptr<IStats> &stats_client) {
+    //**************** Legacy dfs stats monitoring. ************************//
     std::vector<std::string> thermalStatsPaths =
         readStringVectorFromJson(configData["ThermalStatsPaths"]);
-    thermal_stats_reporter_.logThermalStats(stats_client, thermalStatsPaths);
+    thermal_stats_reporter_.logThermalDfsStats(stats_client, thermalStatsPaths);
+
+    //************** Tj trip count monitoring. ***********************//
+    thermal_stats_reporter_.logTjTripCountStats(stats_client);
 }
 
 void SysfsCollector::logDisplayPortDSCStats(const std::shared_ptr<IStats> &stats_client) {
@@ -670,6 +674,37 @@ void SysfsCollector::logUFSErrorsCount(const std::shared_ptr<IStats> &stats_clie
     const ndk::ScopedAStatus ret = stats_client->reportVendorAtom(event);
     if (!ret.isOk()) {
         ALOGE("Unable to report StorageUfsErrorCountReported to Stats service");
+    }
+}
+
+void SysfsCollector::logUfsStorageType() {
+    const std::shared_ptr<IStats> stats_client = getStatsService();
+    if (!stats_client) {
+        ALOGE("Unable to get AIDL Stats service");
+        return;
+    }
+    int ufs_type = 0;
+    bool zufs_provisioned = android::base::GetBoolProperty(
+        "ro.vendor.product.ufs_type_zufs", false);
+    ALOGD("Property ro.vendor.product.ufs_type_zufs: %s", zufs_provisioned ? "true" : "false");
+
+    if (zufs_provisioned)
+        ufs_type = UfsStorageTypeReported::ZUFS;
+    else
+        ufs_type = UfsStorageTypeReported::CONVENTIONAL;
+
+    // Load values array
+    std::vector<VendorAtomValue> values(1);
+    values[UfsStorageTypeReported::kUfsTypeFieldNumber - kVendorAtomOffset] =
+        VendorAtomValue::make<VendorAtomValue::intValue>(ufs_type);
+
+    // Send vendor atom to IStats HAL
+    VendorAtom event = {.reverseDomainName = PixelAtoms::ReverseDomainNames().pixel(),
+                        .atomId = PixelAtoms::Atom::kUfsStorageTypeReported,
+                        .values = std::move(values)};
+    const ndk::ScopedAStatus ret = stats_client->reportVendorAtom(event);
+    if (!ret.isOk()) {
+        ALOGE("Unable to report UfsStorageTypeReported to Stats service");
     }
 }
 
@@ -2379,6 +2414,7 @@ void SysfsCollector::logWater() {
 
 void SysfsCollector::logOnce() {
     logBrownout();
+    logUfsStorageType();
     logWater();
 }
 

@@ -149,6 +149,7 @@ message Atom {
       GnssTtffReported gnss_ttff_reported = 105094 [(android.os.statsd.module) = "pixelgnss"];
       StorageUfsErrorCountReported storage_ufs_error_count_reported = 105095;
       UfsStorageTypeReported ufs_storage_type_reported = 105096;
+      ThermalTjTripCountReported thermal_tj_trip_count_reported = 105097;
     }
     // AOSP atom ID range ends at 109999
     reserved 109997; // reserved for VtsVendorAtomJavaTest test atom
@@ -3622,4 +3623,40 @@ message UfsStorageTypeReported {
 
   /* ZUFS type is provisioned */
   optional UfsType ufs_type = 2;
+}
+
+enum TjThermalZone {
+  UNKNOWN_TZ = 0;
+  BIG = 1;
+  BIG_MID = 2;
+  MID = 3;
+  LITTLE = 4;
+  GPU = 5;
+  TPU = 6;
+  AUR = 7;
+  ISP = 8;
+  MEM = 9;
+  AOC = 10;
+}
+
+/*
+ * A message containing the number of times a thermal trip occurred for a
+ * particular trip number on a particular thermal zone.
+ *
+ * Conditions: We generate the atom only when the thermal zone trip is triggered
+ * for that trip number.
+ *
+ * Logged per thermal zone for configured trip number once per day.
+ *
+ * Logged from: hardware/google/pixel/pixelstats/SysfsCollector.cpp
+ */
+message ThermalTjTripCountReported {
+  /* Vendor reverse domain name */
+  optional string reverse_domain_name = 1;
+  /* The tj thermal zone on which the trip occurred. */
+  optional TjThermalZone thermal_zone = 2;
+  /* The trip number for the thermal zone on which the trip occurred. */
+  optional int32 trip_number = 3;
+  /* The number of times the trip occurred. */
+  optional int32 trip_count = 4;
 }

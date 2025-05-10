@@ -212,6 +212,9 @@ struct ThrottlingInfo {
     ThrottlingArray min_alloc_power;
     ThrottlingArray s_power;
     ThrottlingArray i_cutoff;
+    // Increase power budget by I only when thermal rising per min is equal or lower than
+    // i_trend
+    float i_trend;
     float i_default;
     float i_default_pct;
     int tran_cycle;
@@ -245,6 +248,7 @@ struct SensorInfo {
     std::unique_ptr<VirtualSensorInfo> virtual_sensor_info;
     std::shared_ptr<ThrottlingInfo> throttling_info;
     std::unique_ptr<PredictorInfo> predictor_info;
+    int thermal_sample_count;
 };
 
 struct CdevInfo {

@@ -80,6 +80,7 @@ struct SensorStatus {
     ThrottlingSeverity prev_cold_severity;
     boot_clock::time_point last_update_time;
     ThermalSample thermal_cached;
+    std::queue<ThermalSample> thermal_history;
     bool pending_notification;
     OverrideStatus override_status;
 };
@@ -237,6 +238,7 @@ class ThermalHelperImpl : public ThermalHelper {
     size_t getPredictionMaxWindowMs(std::string_view sensor_name);
     float readPredictionAfterTimeMs(std::string_view sensor_name, const size_t time_ms);
     bool readTemperaturePredictions(std::string_view sensor_name, std::vector<float> *predictions);
+    float getThermalRising(const SensorStatus &sensor_status, const ThermalSample &curr_sample);
     void updateCoolingDevices(const std::vector<std::string> &cooling_devices_to_update);
     // Check the max throttling for binded cooling device
     void maxCoolingRequestCheck(
