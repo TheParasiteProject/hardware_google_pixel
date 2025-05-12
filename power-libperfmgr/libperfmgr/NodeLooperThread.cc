@@ -22,10 +22,19 @@
 #include <android-base/file.h>
 #include <android-base/logging.h>
 #include <android-base/properties.h>
+#include <processgroup/processgroup.h>
 #include <utils/Trace.h>
 
 namespace android {
 namespace perfmgr {
+
+status_t NodeLooperThread::readyToRun() {
+    // set task profile "PreferIdle" to lower scheduling latency.
+    if (!SetTaskProfiles(0, {"PreferIdleSet"})) {
+        LOG(WARNING) << "Device does not support 'PreferIdleSet' task profile.";
+    }
+    return NO_ERROR;
+}
 
 bool NodeLooperThread::Request(const std::vector<NodeAction>& actions,
                                const std::string& hint_type) {
