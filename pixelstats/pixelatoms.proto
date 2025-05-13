@@ -2398,6 +2398,7 @@ message PixelImpulseUsageReported {
       TAG_SKIN_TEMPERATURE = 2;
       TAG_BUSINESS_SCOPE = 3;
       TAG_NON_BUSINESS_SCOPE = 4;
+      TAG_RESTART_DELAY = 5;
   }
   /* Tag for debugging purpose */
   optional Tag tag = 5;
