@@ -60,6 +60,8 @@ S_Power
 Stats
 SupportPrediction
 SupportUnderSampling
+TempPath
+TempPathType
 TempRange
 ThermalSampleCount
 Thresholds
