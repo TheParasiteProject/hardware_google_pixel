@@ -80,6 +80,7 @@ struct SensorStatus {
     ThrottlingSeverity prev_cold_severity;
     boot_clock::time_point last_update_time;
     ThermalSample thermal_cached;
+    std::vector<bool> count_threshold_counted;
     std::queue<ThermalSample> thermal_history;
     bool pending_notification;
     OverrideStatus override_status;

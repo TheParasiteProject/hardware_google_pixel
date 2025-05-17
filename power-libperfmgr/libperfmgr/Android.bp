@@ -24,6 +24,7 @@ cc_defaults {
     shared_libs: [
         "libbase",
         "libcutils",
+        "libprocessgroup",
         "libutils",
     ],
     static_libs: [
@@ -60,7 +61,7 @@ cc_library {
         "HintManager.cc",
         "AdpfConfig.cc",
         "EventNode.cc",
-        "JobQueueManager.cc"
+        "JobQueueManager.cc",
     ],
 }
 
