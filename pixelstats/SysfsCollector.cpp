@@ -178,20 +178,7 @@ void SysfsCollector::logBatteryEEPROM(const std::shared_ptr<IStats> &stats_clien
     battery_EEPROM_reporter_.checkAndReportMaxfgHistory(stats_client, maxfgHistoryPath);
     battery_EEPROM_reporter_.checkAndReportFGModelLoading(stats_client, FGModelLoadingPath);
     battery_EEPROM_reporter_.checkAndReportFGLearning(stats_client, FGLogBufferPath);
-}
-
-/**
- * Log battery history validation
- */
-void SysfsCollector::logBatteryHistoryValidation() {
-    const std::shared_ptr<IStats> stats_client = getStatsService();
-    if (!stats_client) {
-        ALOGE("Unable to get AIDL Stats service");
-        return;
-    }
-
-    std::vector<std::string> FGLogBufferPath = readStringVectorFromJson(configData["FGLogBufferPath"]);
-    battery_EEPROM_reporter_.checkAndReportValidation(stats_client, FGLogBufferPath);
+    battery_EEPROM_reporter_.checkAndReportHistValid(stats_client, FGLogBufferPath);
 }
 
 /**
@@ -2252,7 +2239,6 @@ void SysfsCollector::logPerDay() {
     logBatteryEEPROM(stats_client);
     logBatteryHealth(stats_client);
     logBatteryTTF(stats_client);
-    logBatteryHistoryValidation();
     logBlockStatsReported(stats_client);
     logCodec1Failed(stats_client);
     logCodecFailed(stats_client);
