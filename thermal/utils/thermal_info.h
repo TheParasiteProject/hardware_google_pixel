@@ -223,12 +223,19 @@ struct ThrottlingInfo {
     ProfileMap profile_map;
 };
 
+// Type of temp path to read the sensor data.
+enum class TempPathType : uint32_t {
+    SYSFS = 0,        // Default, read from sysfs
+    DEVICE_PROPERTY,  // Read from device property
+};
+
 struct SensorInfo {
     TemperatureType type;
     ThrottlingArray hot_thresholds;
     ThrottlingArray cold_thresholds;
     ThrottlingArray hot_hysteresis;
     ThrottlingArray cold_hysteresis;
+    TempPathType temp_path_type;
     std::string temp_path;
     std::vector<std::string> severity_reference;
     float vr_threshold;

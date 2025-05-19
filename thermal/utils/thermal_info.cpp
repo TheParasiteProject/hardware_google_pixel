@@ -1486,6 +1486,24 @@ bool ParseSensorInfo(const Json::Value &config,
             }
         }
 
+        TempPathType temp_path_type = TempPathType::SYSFS;
+        if (sensors[i]["TempPathType"].empty()) {
+            LOG(INFO) << "Sensor[" << name << "]'s TempPathType is empty, default to SYSFS.";
+        } else {
+            const auto &temp_path_type_str = sensors[i]["TempPathType"].asString();
+            if (temp_path_type_str == "SYSFS") {
+                temp_path_type = TempPathType::SYSFS;
+            } else if (temp_path_type_str == "DEVICE_PROPERTY") {
+                temp_path_type = TempPathType::DEVICE_PROPERTY;
+            } else {
+                LOG(ERROR) << "Sensor[" << name
+                           << "]'s TempPathType is invalid: " << temp_path_type_str;
+                sensors_parsed->clear();
+                return false;
+            }
+            LOG(INFO) << "Sensor[" << name << "]'s TempPathType: " << temp_path_type_str;
+        }
+
         std::string temp_path;
         if (!sensors[i]["TempPath"].empty()) {
             temp_path = sensors[i]["TempPath"].asString();
@@ -1604,6 +1622,7 @@ bool ParseSensorInfo(const Json::Value &config,
                 .cold_thresholds = cold_thresholds,
                 .hot_hysteresis = hot_hysteresis,
                 .cold_hysteresis = cold_hysteresis,
+                .temp_path_type = temp_path_type,
                 .temp_path = temp_path,
                 .severity_reference = severity_reference,
                 .vr_threshold = vr_threshold,
