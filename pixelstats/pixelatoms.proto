@@ -3238,7 +3238,7 @@ message MediaPlaybackUsageStatsReported {
   optional float volume = 10;
 
   /* Average power in milliwatts. -1 if unavailable. */
-  optional float average_power = 11;
+  optional float average_power = 11 [deprecated = true];
 
   /* Sample rate used in the media playback. */
   optional int32 sample_rate = 12;
@@ -3271,6 +3271,12 @@ message MediaPlaybackUsageStatsReported {
 
   /* Offload Encoding used in the media playback. */
   optional OffloadEncoding offload_encoding = 16;
+
+  /* Powers in milliwatts for each speaker. There are at most 4 speakers. */
+  repeated float milliwatt_powers = 17;
+
+  /* Active duration in second for each speaker. There are at most 4 speakers. */
+  repeated int32 speaker_active_duration_second = 18;
 }
 
 /*
