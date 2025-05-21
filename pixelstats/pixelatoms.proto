@@ -97,7 +97,7 @@ message Atom {
       VendorLongIRQStatsReported vendor_long_irq_stats_reported = 105043;
       VendorResumeLatencyStats vendor_resume_latency_stats = 105044;
       VendorTempResidencyStats vendor_temp_residency_stats = 105045;
-      BrownoutDetected brownout_detected = 105046;
+      BrownoutDetected brownout_detected = 105046 [(android.os.statsd.module) = "pixelbcl"];
       PcieLinkStatsReported pcie_link_stats = 105047;
       VendorSensorCoolingDeviceStats vendor_sensor_cooling_device_stats = 105048;
 
@@ -1864,6 +1864,22 @@ message BrownoutDetected {
     optional int32 odpm_irq_stat_cpu1_bckup = 90;
     // odpm irq stat cpu2 at brownout
     optional int32 odpm_irq_stat_cpu2_bckup = 91;
+    // triggered ODPM Reading: Channel 25
+    optional int32 odpm_channel25 = 92;
+    // triggered ODPM Reading: Channel 26
+    optional int32 odpm_channel26 = 93;
+    // triggered ODPM Reading: Channel 27
+    optional int32 odpm_channel27 = 94;
+    // triggered ODPM Reading: Channel 28
+    optional int32 odpm_channel28 = 95;
+    // triggered ODPM Reading: Channel 29
+    optional int32 odpm_channel29 = 96;
+    // triggered ODPM Reading: Channel 30
+    optional int32 odpm_channel30 = 97;
+    // triggered ODPM Reading: Channel 31
+    optional int32 odpm_channel31 = 98;
+    // triggered ODPM Reading: Channel 32
+    optional int32 odpm_channel32 = 99;
 }
 
 /*
