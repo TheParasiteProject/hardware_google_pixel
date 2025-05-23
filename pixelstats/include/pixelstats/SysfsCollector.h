@@ -24,7 +24,6 @@
 #include "BatteryEEPROMReporter.h"
 #include "BatteryHealthReporter.h"
 #include "BatteryTTFReporter.h"
-#include "BrownoutDetectedReporter.h"
 #include "DisplayStatsReporter.h"
 #include "MitigationDurationReporter.h"
 #include "MitigationStatsReporter.h"
@@ -52,7 +51,6 @@ class SysfsCollector {
     bool ReadFileToInt(const char *path, int *val);
     void aggregatePer5Min();
     void logOnce();
-    void logBrownout();
     void logWater();
     void logPerDay();
     void logPerHour();
@@ -112,7 +110,6 @@ class SysfsCollector {
     MmMetricsReporter mm_metrics_reporter_;
     MitigationStatsReporter mitigation_stats_reporter_;
     MitigationDurationReporter mitigation_duration_reporter_;
-    BrownoutDetectedReporter brownout_detected_reporter_;
     ThermalStatsReporter thermal_stats_reporter_;
     DisplayStatsReporter display_stats_reporter_;
     BatteryHealthReporter battery_health_reporter_;

@@ -2381,25 +2381,6 @@ void SysfsCollector::aggregatePer5Min() {
     mm_metrics_reporter_.aggregatePixelMmMetricsPer5Min();
 }
 
-void SysfsCollector::logBrownout() {
-    const std::shared_ptr<IStats> stats_client = getStatsService();
-    if (!stats_client) {
-        ALOGE("Unable to get AIDL Stats service");
-        return;
-    }
-    std::string brownoutCsvPath = getCStringOrDefault(configData, "BrownoutCsvPath");
-    std::string brownoutLogPath = getCStringOrDefault(configData, "BrownoutLogPath");
-    std::string brownoutReasonProp = getCStringOrDefault(configData, "BrownoutReasonProp");
-    if (!brownoutCsvPath.empty())
-        brownout_detected_reporter_.logBrownoutCsv(stats_client, brownoutCsvPath.c_str(),
-                                                   brownoutReasonProp);
-    else if (!brownoutLogPath.empty())
-        brownout_detected_reporter_.logBrownout(stats_client, brownoutLogPath.c_str(),
-                                                brownoutReasonProp);
-    else
-        ALOGV("Brownout Csv and Log path are not specified in JSON");
-}
-
 void SysfsCollector::logWater() {
     const std::shared_ptr<IStats> stats_client = getStatsService();
     if (!stats_client) {
@@ -2412,7 +2393,6 @@ void SysfsCollector::logWater() {
 }
 
 void SysfsCollector::logOnce() {
-    logBrownout();
     logUfsStorageType();
     logWater();
 }
