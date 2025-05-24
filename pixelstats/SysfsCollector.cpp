@@ -1040,8 +1040,6 @@ void SysfsCollector::logDmVerityPartitionReadAmount(const std::shared_ptr<IStats
 
     size_t partitionIndex = 0;
     for (const auto& partitionName : partitionNames) {
-        ++partitionIndex;
-
         // Construct the partition name with slot suffix
         std::string fullPartitionName = std::string(partitionName) + slotSuffix;
 
@@ -1106,6 +1104,7 @@ void SysfsCollector::logDmVerityPartitionReadAmount(const std::shared_ptr<IStats
         if (!ret.isOk()) {
             ALOGE("Unable to report DmVerityPartitionReadAmountReported to Stats service");
         }
+        ++partitionIndex;
     }
     return;
 }

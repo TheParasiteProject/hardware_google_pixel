@@ -303,7 +303,30 @@ void HintManager::DumpToFd(int fd) {
             LOG(ERROR) << "Failed to dump fd: " << fd;
         }
     }
+
+    DumpOtherConfigs(fd);
     fsync(fd);
+}
+
+void HintManager::DumpOtherConfigs(int fd) {
+    std::ostringstream dumpBuf;
+    dumpBuf << "========== Other configurations begin ==========\n";
+    if (other_configs_.GPUSysfsPath) {
+        dumpBuf << "GPUSysfsPath: " << other_configs_.GPUSysfsPath.value() << "\n";
+    }
+    if (other_configs_.enableMetricCollection) {
+        dumpBuf << "EnableMetricCollection: " << other_configs_.enableMetricCollection.value()
+                << "\n";
+    }
+    if (other_configs_.maxNumOfCachedSessionMetrics) {
+        dumpBuf << "MaxNumOfCachedSessionMetrics: "
+                << other_configs_.maxNumOfCachedSessionMetrics.value() << "\n";
+    }
+    dumpBuf << "========== Other configurations end ==========\n";
+
+    if (!android::base::WriteStringToFd(dumpBuf.str(), fd)) {
+        LOG(ERROR) << "Failed to dump fd: " << fd;
+    }
 }
 
 bool HintManager::Start() {
@@ -336,20 +359,42 @@ HintManager *HintManager::GetInstance() {
     return sInstance.get();
 }
 
-static std::optional<std::string> ParseGpuSysfsNode(const std::string &json_doc) {
+OtherConfigs HintManager::ParseOtherConfigs(const std::string &json_doc) {
+    OtherConfigs otherConf;
     Json::Value root;
     Json::CharReaderBuilder builder;
     std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
     std::string errorMessage;
     if (!reader->parse(&*json_doc.begin(), &*json_doc.end(), &root, &errorMessage)) {
         LOG(ERROR) << "Failed to parse JSON config: " << errorMessage;
-        return {};
+        return otherConf;
     }
 
-    if (root["GpuSysfsPath"].empty() || !root["GpuSysfsPath"].isString()) {
-        return {};
+    // TODO(guibing@): Remove this part after all the powerhint configurations moved its position
+    // under "OtherConfigs". Keep it now for compatibility with existing powerhint json files.
+    if (!root["GpuSysfsPath"].empty() && root["GpuSysfsPath"].isString()) {
+        otherConf.GPUSysfsPath = root["GpuSysfsPath"].asString();
     }
-    return {root["GpuSysfsPath"].asString()};
+
+    if (root["OtherConfigs"].empty()) {
+        return otherConf;
+    }
+
+    // Parse other configurations
+    Json::Value extraOtherConf = root["OtherConfigs"];
+    if (!extraOtherConf["EnableMetricCollection"].empty() &&
+        extraOtherConf["EnableMetricCollection"].isBool()) {
+        otherConf.enableMetricCollection = extraOtherConf["EnableMetricCollection"].asBool();
+    }
+    if (!extraOtherConf["MaxNumOfCachedSessionMetrics"].empty() &&
+        extraOtherConf["MaxNumOfCachedSessionMetrics"].isUInt()) {
+        otherConf.maxNumOfCachedSessionMetrics =
+                extraOtherConf["MaxNumOfCachedSessionMetrics"].asUInt();
+    }
+    if (!extraOtherConf["GpuSysfsPath"].empty() && extraOtherConf["GpuSysfsPath"].isString()) {
+        otherConf.GPUSysfsPath = extraOtherConf["GpuSysfsPath"].asString();
+    }
+    return otherConf;
 }
 
 HintManager *HintManager::GetFromJSON(const std::string &config_path, bool start) {
@@ -406,11 +451,11 @@ HintManager *HintManager::GetFromJSON(const std::string &config_path, bool start
         return nullptr;
     }
 
-    auto const gpu_sysfs_node = ParseGpuSysfsNode(json_doc);
+    auto const other_configs = ParseOtherConfigs(json_doc);
 
     sp<NodeLooperThread> nm = new NodeLooperThread(std::move(nodes));
     sInstance =
-            std::make_unique<HintManager>(std::move(nm), actions, adpfs, tag_adpfs, gpu_sysfs_node);
+            std::make_unique<HintManager>(std::move(nm), actions, adpfs, tag_adpfs, other_configs);
 
     if (!HintManager::InitHintStatus(sInstance)) {
         LOG(ERROR) << "Failed to initialize hint status";
@@ -1082,7 +1127,11 @@ void HintManager::UnregisterAdpfUpdateEvent(const std::string &tag,
 }
 
 std::optional<std::string> HintManager::gpu_sysfs_config_path() const {
-    return gpu_sysfs_config_path_;
+    return other_configs_.GPUSysfsPath;
+}
+
+OtherConfigs HintManager::GetOtherConfigs() const {
+    return other_configs_;
 }
 
 }  // namespace perfmgr

@@ -25,10 +25,8 @@
 #include <utils/Trace.h>
 
 #include <filesystem>
-#include <iterator>
 #include <set>
 #include <sstream>
-#include <thread>
 #include <vector>
 
 namespace aidl {
@@ -817,20 +815,27 @@ bool ThermalHelperImpl::initializeSensorMap(
         if (sensor_info_pair.second.virtual_sensor_info != nullptr) {
             continue;
         }
-        if (!path_map.count(sensor_name.data())) {
-            LOG(ERROR) << "Could not find " << sensor_name << " in sysfs";
-            return false;
-        }
 
-        std::string path;
-        if (sensor_info_pair.second.temp_path.empty()) {
-            path = ::android::base::StringPrintf("%s/%s", path_map.at(sensor_name.data()).c_str(),
-                                                 kSensorTempSuffix.data());
-        } else {
-            path = sensor_info_pair.second.temp_path;
-        }
+        auto path = sensor_info_pair.second.temp_path;
+        const auto &path_type = sensor_info_pair.second.temp_path_type;
+        // If of SYSFS path type, ensure the sensor name is in the path map.
+        if (path_type == TempPathType::SYSFS) {
+            if (!path_map.contains(sensor_name.data())) {
+                LOG(ERROR) << "Could not find " << sensor_name << " in sysfs";
+                return false;
+            }
 
-        if (!thermal_sensors_.addThermalFile(sensor_name, path)) {
+            if (path.empty()) {
+                path = ::android::base::StringPrintf(
+                        "%s/%s", path_map.at(sensor_name.data()).c_str(), kSensorTempSuffix.data());
+            }
+        } else if (path_type == TempPathType::DEVICE_PROPERTY) {
+            if (path.empty()) {
+                LOG(ERROR) << "Empty device property path for sensor: " << sensor_name;
+                return false;
+            }
+        }
+        if (!thermal_sensors_.addThermalFile(sensor_name, path, path_type)) {
             LOG(ERROR) << "Could not add " << sensor_name << "to sensors map";
             return false;
         }
@@ -1773,7 +1778,8 @@ std::chrono::milliseconds ThermalHelperImpl::thermalWatcherCallbackFunc(
                     sensor_status.thermal_history.pop();
                     sensor_status.thermal_history.push(curr_sample);
                 } else {
-                    LOG(ERROR) << "Sensor " << name_status_pair.first << ": thermal_history size should not be zero";
+                    LOG(ERROR) << "Sensor " << name_status_pair.first
+                               << ": thermal_history size should not be zero";
                 }
             }
 
