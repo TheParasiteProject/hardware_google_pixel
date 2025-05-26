@@ -11,6 +11,7 @@ CombinationType
 Configs
 CoolingDevices
 CountThresholdHysteresis
+ExcludedPowerInfo
 ExcludedPowerRailsLog
 Formula
 Hidden
@@ -46,8 +47,10 @@ PassiveDelay
 PowerSampleCount
 PIDInfo
 PollingDelay
+PowerRail
 PowerRails
 PowerSampleDelay
+PowerWeight
 PredictionDuration
 PreviousSampleCount
 RecordWithDefaultThreshold
