@@ -16,6 +16,7 @@
 
 #include <aidl/android/hardware/power/SessionTag.h>
 #include <android-base/file.h>
+#include <android-base/parseint.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sys/syscall.h>
@@ -167,11 +168,16 @@ class PowerHintSessionTest : public ::testing::Test {
             thread_vendor_attrs.push_back(attr);
         }
 
-        const int32_t tag_word_pos = 10;  // The adpf attribute position in dump log.
+        const int32_t tag_word_pos = 9;  // The user QOS attributes position in dump log.
         if (thread_vendor_attrs.size() < tag_word_pos + 1) {
             return false;
         }
-        *isActive = thread_vendor_attrs[tag_word_pos] == "1";
+        const int32_t adpf_bit_pos = 4;  // ADPF bit position in the user QOS variable.
+        int32_t vendor_qos_val;
+        if (!::android::base::ParseInt(thread_vendor_attrs[tag_word_pos], &vendor_qos_val)) {
+            return false;
+        }
+        *isActive = vendor_qos_val & (0x1 << adpf_bit_pos);
         return true;
     }
 };
