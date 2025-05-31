@@ -24,7 +24,6 @@
 #include <android-base/strings.h>
 #include <utils/Trace.h>
 
-#include <filesystem>
 #include <set>
 #include <sstream>
 #include <vector>
@@ -95,23 +94,28 @@ std::unordered_map<std::string, std::string> parseThermalPathMap(std::string_vie
 
 std::unordered_map<std::string, std::string> parsePowerCapPathMap(void) {
     std::unordered_map<std::string, std::string> path_map;
-    std::error_code ec;
-
-    if (!std::filesystem::exists(kPowerCapRoot, ec)) {
-        LOG(INFO) << "powercap root " << kPowerCapRoot << " does not exist, ec " << ec.message();
+    std::unique_ptr<DIR, int (*)(DIR *)> dir(opendir(kPowerCapRoot.data()), closedir);
+    if (!dir) {
         return path_map;
     }
 
-    for (const auto &entry : std::filesystem::directory_iterator(kPowerCapRoot)) {
-        std::string path = ::android::base::StringPrintf("%s/%s", entry.path().c_str(),
-                                                         kPowerCapNameFile.data());
-        std::string name;
-        if (::android::base::ReadFileToString(path, &name)) {
-            path_map.emplace(::android::base::Trim(name), entry.path());
-        } else {
-            PLOG(ERROR) << "Failed to read from " << path << ", errno " << errno;
+    while (struct dirent *dp = readdir(dir.get())) {
+        if (dp->d_type != DT_LNK) {
+            continue;
         }
+
+        std::string path = ::android::base::StringPrintf("%s/%s/%s", kPowerCapRoot.data(),
+                                                         dp->d_name, kPowerCapNameFile.data());
+
+        std::string name;
+        if (!::android::base::ReadFileToString(path, &name)) {
+            continue;
+        }
+
+        path_map.emplace(::android::base::Trim(name),
+                         ::android::base::StringPrintf("%s/%s", kPowerCapRoot.data(), dp->d_name));
     }
+
     return path_map;
 }
 
