@@ -1,0 +1,9 @@
+package: "powerhal.flags"
+container: "system"
+
+flag {
+    namespace: "pixel_perf"
+    name: "test_flag"
+    description: "This flag is a test to make sure this actually works as intended"
+    bug: "414615086"
+}

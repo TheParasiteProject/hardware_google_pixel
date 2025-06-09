@@ -17,6 +17,19 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+aconfig_declarations {
+    name: "powerhal_flags-aconfig",
+    container: "system",
+    package: "powerhal.flags",
+    exportable: true,
+    srcs: ["flags.aconfig"],
+}
+
+cc_aconfig_library {
+    name: "powerhal_flags-aconfig-cc",
+    aconfig_declarations: "powerhal_flags-aconfig",
+}
+
 cc_library {
     name: "libdisppower-pixel",
     proprietary: true,
@@ -82,6 +95,7 @@ cc_test {
         "libgtest",
         "android.hardware.common-V2-ndk",
         "android.hardware.common.fmq-V1-ndk",
+        "powerhal_flags-aconfig-cc",
     ],
     shared_libs: [
         "liblog",
@@ -131,6 +145,7 @@ cc_binary {
         "libgmock",
         "libgtest",
         "libpixelstats",
+        "powerhal_flags-aconfig-cc",
     ],
     srcs: [
         "aidl/BackgroundWorker.cpp",
