@@ -107,6 +107,7 @@ class BatteryEEPROMReporter {
     };
 
     int64_t report_time_ = 0;
+    int64_t report_time_maxfg_ = 0;
     int64_t getTimeSecs();
 
     void reportEvent(const std::shared_ptr<IStats> &stats_client,
