@@ -298,9 +298,17 @@ void BatteryEEPROMReporter::checkAndReportMaxfgHistory(const std::shared_ptr<ISt
                                                        const std::string &path) {
     std::string file_contents;
     int16_t i;
+    const int kSecondsPerMonth = 60 * 60 * 24 * 30;
+    int64_t now = getTimeSecs();
 
     if (path.empty())
         return;
+
+    if ((report_time_maxfg_ != 0) && (now - report_time_maxfg_ < kSecondsPerMonth)) {
+        ALOGD("Not upload time for maxfg history. now: %" PRId64 ", pre: %" PRId64,
+              now, report_time_maxfg_);
+        return;
+    }
 
     /* not support max17201 */
     if (!ReadFileToString(path, &file_contents))
@@ -355,6 +363,7 @@ void BatteryEEPROMReporter::checkAndReportMaxfgHistory(const std::shared_ptr<ISt
         maxfg_hist.rslow = nVoltTemp;
 
         reportEvent(stats_client, maxfg_hist);
+        report_time_maxfg_ = now;
     }
 }
 
