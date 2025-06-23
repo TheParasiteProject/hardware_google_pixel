@@ -149,6 +149,7 @@ message Atom {
       StorageUfsErrorCountReported storage_ufs_error_count_reported = 105095;
       UfsStorageTypeReported ufs_storage_type_reported = 105096;
       ThermalTjTripCountReported thermal_tj_trip_count_reported = 105097;
+      BatteryFuelGaugeReported battery_fuel_gauge_reported = 105098;
     }
     // AOSP atom ID range ends at 109999
     reserved 105077; // moved GpuFrequencyTimeInStatePerUidReported
@@ -3601,4 +3602,32 @@ message ThermalTjTripCountReported {
   optional int32 trip_number = 3;
   /* The number of times the trip occurred. */
   optional int32 trip_count = 4;
+}
+
+/*
+ * A message containing fuel gauge events
+ * Logged from:
+ *    hardware/google/pixel/pixelstats/BatteryFGReporter.cpp
+ */
+message BatteryFuelGaugeReported {
+  /* Vendor reverse domain name */
+  optional string reverse_domain_name = 1;
+
+  enum BatteryFgIndex {
+    UNKNOWN = 0;
+    PRIMARY = 1;
+    SECONDARY = 2;
+  }
+
+  /* battery fuel gauge logging time */
+  optional int64 unix_time_sec = 2;
+  /* specifies the identifier for the data */
+  optional int32 data_type = 3;
+  /* conditions for triggering */
+  optional int32 data_event = 4;
+  /* Specifies the FG index for battery configurations  */
+  optional BatteryFgIndex fg_index = 5;
+
+  /* fg registers at the time of the type/event/index */
+  repeated int32 fg_data = 6;
 }
