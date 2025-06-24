@@ -122,6 +122,7 @@ class BatteryEEPROMReporter {
     const int kNumEEPROMPipelineFields = sizeof(BatteryEEPROMPipeline) / sizeof(int32_t);
 
     const std::string kBatteryPairingPath = "/sys/class/power_supply/battery/pairing_state";
+    const std::string kBatteryCycleCountPath = "/sys/class/power_supply/battery/cycle_count";
 };
 
 }  // namespace pixel

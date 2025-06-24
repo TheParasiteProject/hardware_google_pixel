@@ -15,7 +15,6 @@
  */
 
 #define LOG_TAG "pixelstats: BatteryEEPROM"
-#define BATTERY_CYCLE_COUNT_PATH "/sys/class/power_supply/battery/cycle_count"
 
 #include <log/log.h>
 #include <time.h>
@@ -63,10 +62,9 @@ bool BatteryEEPROMReporter::ReadFileToInt(const std::string &path, int32_t *val)
 }
 
 bool BatteryEEPROMReporter::checkCycleCountRollback() {
-    const std::string cycle_count_path(BATTERY_CYCLE_COUNT_PATH);
     int cycle_count;
 
-    if (ReadFileToInt(cycle_count_path.c_str(), &cycle_count) && cycle_count > 0) {
+    if (ReadFileToInt(kBatteryCycleCountPath.c_str(), &cycle_count) && cycle_count > 0) {
         if (last_cycle_count == 0) {
             last_cycle_count = cycle_count;
             return false;
@@ -101,7 +99,6 @@ void BatteryEEPROMReporter::checkAndReport(const std::shared_ptr<IStats> &stats_
     std::string file_contents;
     std::string history_each;
     std::string cycle_count;
-    const std::string cycle_count_path(BATTERY_CYCLE_COUNT_PATH);
     int sparse_index_count = 0;
     const int kSecondsPerMonth = 60 * 60 * 24 * 30;
     int64_t now = getTimeSecs();
@@ -122,7 +119,7 @@ void BatteryEEPROMReporter::checkAndReport(const std::shared_ptr<IStats> &stats_
     ALOGD("kHistTotalLen=%d, kHistTotalNum=%d\n", kHistTotalLen, kHistTotalNum);
 
     /* TODO: wait for pa/2875004 merge
-    if (ReadFileToString(cycle_count_path.c_str(), &cycle_count)) {
+    if (ReadFileToString(kBatteryCycleCountPath.c_str(), &cycle_count)) {
         int cnt;
 
         cycle_count = android::base::Trim(cycle_count);
@@ -286,10 +283,24 @@ void BatteryEEPROMReporter::checkAndReportGMSR(const std::shared_ptr<IStats> &st
         return;
     }
 
+    if (num == kNum77759GMSRFields) {
+        /* LSB: 5.0μVh/RSENSE ; Rsense LSB is 10μΩ ; multiply by 2 when task period = 351 ms */
+        gmsr.cc_soc = gmsr.full_cap * 5 / 3 * 2;
+        gmsr.sys_soc = gmsr.full_rep * 5 / 3 * 2;
+    } else if (num == kNum77779GMSRFields) {
+        /* LSB: 5.0μVh/RSENSE ; Rsense LSB is 10μΩ */
+        gmsr.cc_soc = gmsr.full_cap * 5 / 2;
+        gmsr.sys_soc = gmsr.full_rep * 5 / 2;
+    }
+
     if (gmsr.tempco == 0xFFFF || gmsr.rcomp0 == 0xFFFF || gmsr.full_cap == 0xFFFF) {
 	    ALOGD("Ignore invalid gmsr");
 	    return;
     }
+
+    if (!ReadFileToInt(kBatteryCycleCountPath, &gmsr.soh))
+        ALOGE("Unable to read cycle count path: %s - %s", kBatteryCycleCountPath.c_str(),
+              strerror(errno));
 
     reportEvent(stats_client, gmsr);
 }
