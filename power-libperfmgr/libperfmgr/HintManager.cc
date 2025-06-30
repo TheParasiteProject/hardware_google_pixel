@@ -322,6 +322,8 @@ void HintManager::DumpOtherConfigs(int fd) {
         dumpBuf << "MaxNumOfCachedSessionMetrics: "
                 << other_configs_.maxNumOfCachedSessionMetrics.value() << "\n";
     }
+    dumpBuf << "EnableSFPreferHighCap: " << other_configs_.enableSFPreferHighCap
+            << "\n";
     dumpBuf << "========== Other configurations end ==========\n";
 
     if (!android::base::WriteStringToFd(dumpBuf.str(), fd)) {
@@ -394,6 +396,10 @@ OtherConfigs HintManager::ParseOtherConfigs(const std::string &json_doc) {
     if (!extraOtherConf["GpuSysfsPath"].empty() && extraOtherConf["GpuSysfsPath"].isString()) {
         otherConf.GPUSysfsPath = extraOtherConf["GpuSysfsPath"].asString();
     }
+    if (!extraOtherConf["EnableSFPreferHighCap"].empty() &&
+        extraOtherConf["EnableSFPreferHighCap"].isBool()) {
+        otherConf.enableSFPreferHighCap = extraOtherConf["EnableSFPreferHighCap"].asBool();
+    }
     return otherConf;
 }
 
@@ -424,7 +430,7 @@ HintManager *HintManager::GetFromJSON(const std::string &config_path, bool start
         const std::string &node_name = nodes[i]->GetName();
         const std::vector<std::string> &node_paths = nodes[i]->GetPaths();
 
-        for (auto &path: node_paths){
+        for (auto &path : node_paths) {
             if (path.starts_with(kAdpfEventNodePath)) {
                 std::string tag = path.substr(strlen(kAdpfEventNodePath));
                 std::size_t index = nodes[i]->GetDefaultIndex();
@@ -439,8 +445,8 @@ HintManager *HintManager::GetFromJSON(const std::string &config_path, bool start
                 }
                 if (!tag_adpfs[tag]) {
                     tag_adpfs[tag] = adpfs[0];
-                    LOG(INFO) << "[" << tag << ":" << node_name << "] fallback to '" << adpfs[0]->mName
-                            << "'";
+                    LOG(INFO) << "[" << tag << ":" << node_name << "] fallback to '"
+                              << adpfs[0]->mName << "'";
                 }
             }
         }

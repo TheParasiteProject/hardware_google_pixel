@@ -86,6 +86,7 @@ struct OtherConfigs {
     std::optional<std::string> GPUSysfsPath;
     std::optional<bool> enableMetricCollection;
     std::optional<uint32_t> maxNumOfCachedSessionMetrics;
+    bool enableSFPreferHighCap = false;
 };
 
 // HintManager is the external interface of the library to be used by PowerHAL
@@ -207,7 +208,8 @@ class HintManager {
     static std::unique_ptr<HintManager> sInstance;
 
     // Hint Update Callback
-    void OnNodeUpdate(const std::string &name, const std::vector<std::string> &paths, const std::string &value);
+    void OnNodeUpdate(const std::string &name, const std::vector<std::string> &paths,
+                      const std::string &value);
     // set ADPF config by hint name.
     std::unordered_map<std::string, std::vector<AdpfCallback *>> tag_update_callback_list_;
     // Other configurations

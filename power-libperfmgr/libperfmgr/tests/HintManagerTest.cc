@@ -293,7 +293,8 @@ constexpr char kJSON_ADPF[] = R"(
     "GpuSysfsPath" : "/sys/devices/platform/123.abc",
     "OtherConfigs": {
         "EnableMetricCollection": true,
-        "MaxNumOfCachedSessionMetrics": 100
+        "MaxNumOfCachedSessionMetrics": 100,
+        "EnableSFPreferHighCap": true
     }
 }
 )";
@@ -1156,6 +1157,7 @@ TEST_F(HintManagerTest, OtherConfigs) {
     EXPECT_EQ(other_configs.GPUSysfsPath, "/sys/devices/platform/123.abc");
     EXPECT_TRUE(other_configs.enableMetricCollection);
     EXPECT_EQ(other_configs.maxNumOfCachedSessionMetrics, 100);
+    EXPECT_TRUE(other_configs.enableSFPreferHighCap);
 
     // Without other configurations
     ASSERT_TRUE(android::base::WriteStringToFile(kJSON_RAW, json_file.path)) << strerror(errno);
@@ -1166,6 +1168,7 @@ TEST_F(HintManagerTest, OtherConfigs) {
     EXPECT_EQ(other_configs.GPUSysfsPath, std::nullopt);
     EXPECT_EQ(other_configs.enableMetricCollection, std::nullopt);
     EXPECT_EQ(other_configs.maxNumOfCachedSessionMetrics, std::nullopt);
+    EXPECT_FALSE(other_configs.enableSFPreferHighCap);
 }
 
 }  // namespace perfmgr
