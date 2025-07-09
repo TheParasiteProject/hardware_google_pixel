@@ -94,6 +94,7 @@ cc_test {
     ],
     cpp_std: "gnu++20",
     static_libs: [
+        "libaconfig_storage_read_api_cc",
         "libgmock",
         "libgtest",
         "android.hardware.common-V2-ndk",
@@ -147,6 +148,7 @@ cc_binary {
         "libfmq",
     ],
     static_libs: [
+        "libaconfig_storage_read_api_cc",
         "libgmock",
         "libgtest",
         "libpixelstats",
