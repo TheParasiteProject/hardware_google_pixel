@@ -19,7 +19,7 @@ package {
 
 aconfig_declarations {
     name: "powerhal_flags-aconfig",
-    container: "system",
+    container: "vendor",
     package: "powerhal.flags",
     exportable: true,
     srcs: ["flags.aconfig"],
@@ -28,7 +28,7 @@ aconfig_declarations {
 cc_aconfig_library {
     name: "powerhal_flags-aconfig-cc",
     aconfig_declarations: "powerhal_flags-aconfig",
-    vendor_available: true,
+    vendor: true,
 }
 
 cc_library {

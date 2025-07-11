@@ -1,5 +1,5 @@
 package: "powerhal.flags"
-container: "system"
+container: "vendor"
 
 flag {
     namespace: "pixel_perf"
