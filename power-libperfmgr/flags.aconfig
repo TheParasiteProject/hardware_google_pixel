@@ -7,3 +7,10 @@ flag {
     description: "This flag is a test to make sure this actually works as intended"
     bug: "414615086"
 }
+
+flag {
+    namespace: "pixel_perf"
+    name: "gpu_load_up_for_blurs"
+    description: "Transition from using hardcoded gpu expensive rendering to load up signal"
+    bug: "417494383"
+}
