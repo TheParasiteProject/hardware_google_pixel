@@ -19,6 +19,7 @@
 #include "include/pixelusb/MonitorFfs.h"
 
 #include <android-base/file.h>
+#include <android-base/stringprintf.h>
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 #include <sys/inotify.h>
@@ -35,6 +36,7 @@ namespace pixel {
 namespace usb {
 
 using ::android::base::WriteStringToFile;
+using ::android::base::StringAppendF;
 using ::std::chrono::microseconds;
 using ::std::chrono::steady_clock;
 using ::std::literals::chrono_literals::operator""ms;
@@ -52,7 +54,8 @@ MonitorFfs::MonitorFfs(const char *const gadget)
       mCallback(NULL),
       mPayload(NULL),
       mGadgetName(gadget),
-      mMonitorRunning(false) {
+      mMonitorRunning(false),
+      mWriteUdc(true) {
     unique_fd eventFd(eventfd(0, 0));
     if (eventFd == -1) {
         ALOGE("mEventFd failed to create %d", errno);
@@ -130,29 +133,33 @@ static void displayInotifyEvent(struct inotify_event *i) {
 void *MonitorFfs::startMonitorFd(void *param) {
     MonitorFfs *monitorFfs = (MonitorFfs *)param;
     char buf[kBufferSize];
-    bool writeUdc = true, stopMonitor = false;
+    bool stopMonitor = false;
     struct epoll_event events[kEpollEvents];
     steady_clock::time_point disconnect;
 
-    bool descriptorWritten = true;
+    monitorFfs->mFfsEndpointsPresent = true;
     for (int i = 0; i < static_cast<int>(monitorFfs->mEndpointList.size()); i++) {
         if (access(monitorFfs->mEndpointList.at(i).c_str(), R_OK)) {
-            descriptorWritten = false;
+            monitorFfs->mFfsEndpointsPresent = false;
             break;
         }
     }
 
     // notify here if the endpoints are already present.
-    if (descriptorWritten) {
+    if (monitorFfs->mFfsEndpointsPresent) {
         usleep(kPullUpDelay);
         if (WriteStringToFile(monitorFfs->mGadgetName, PULLUP_PATH)) {
             std::lock_guard<std::mutex> lock(monitorFfs->mLock);
             monitorFfs->mCurrentUsbFunctionsApplied = true;
             monitorFfs->mCallback(monitorFfs->mCurrentUsbFunctionsApplied, monitorFfs->mPayload);
             gadgetPullup = true;
-            writeUdc = false;
+            monitorFfs->mWriteUdc = false;
+            monitorFfs->mWriteUdcLastError = 0;
             ALOGI("GADGET pulled up");
             monitorFfs->mCv.notify_all();
+        } else {
+            monitorFfs->mWriteUdcLastError = errno;
+            ALOGE("Failed to pull up Gadget, err:%d %s", errno, strerror(errno));
         }
     }
 
@@ -160,7 +167,8 @@ void *MonitorFfs::startMonitorFd(void *param) {
         int nrEvents = epoll_wait(monitorFfs->mEpollFd, events, kEpollEvents, -1);
 
         if (nrEvents <= 0) {
-            ALOGE("epoll wait did not return descriptor number");
+            ALOGE("epoll wait returned without Fd being ready. nrEvents:%d err:%d %s", nrEvents,
+                  errno, strerror(errno));
             continue;
         }
 
@@ -178,24 +186,23 @@ void *MonitorFfs::startMonitorFd(void *param) {
 
                     p += sizeof(struct inotify_event) + event->len;
 
-                    bool descriptorPresent = true;
+                    monitorFfs->mFfsEndpointsPresent = true;
                     for (int j = 0; j < static_cast<int>(monitorFfs->mEndpointList.size()); j++) {
                         if (access(monitorFfs->mEndpointList.at(j).c_str(), R_OK)) {
                             if (kDebug) {
                                 ALOGI("%s absent", monitorFfs->mEndpointList.at(j).c_str());
                             }
-                            descriptorPresent = false;
+                            monitorFfs->mFfsEndpointsPresent = false;
                             break;
                         }
                     }
 
-                    if (!descriptorPresent && !writeUdc) {
-                        if (kDebug) {
-                            ALOGI("endpoints not up");
-                        }
-                        writeUdc = true;
+                    if (!monitorFfs->mFfsEndpointsPresent && !monitorFfs->mWriteUdc) {
+                        ALOGI("endpoints not up");
+                        monitorFfs->mWriteUdc = true;
+                        gadgetPullup = false;
                         disconnect = std::chrono::steady_clock::now();
-                    } else if (descriptorPresent && writeUdc) {
+                    } else if (monitorFfs->mFfsEndpointsPresent && monitorFfs->mWriteUdc) {
                         steady_clock::time_point temp = steady_clock::now();
 
                         if (std::chrono::duration_cast<microseconds>(temp - disconnect).count() <
@@ -208,10 +215,14 @@ void *MonitorFfs::startMonitorFd(void *param) {
                             monitorFfs->mCallback(monitorFfs->mCurrentUsbFunctionsApplied,
                                                   monitorFfs->mPayload);
                             ALOGI("GADGET pulled up");
-                            writeUdc = false;
+                            monitorFfs->mWriteUdc = false;
+                            monitorFfs->mWriteUdcLastError = 0;
                             gadgetPullup = true;
                             // notify the main thread to signal userspace.
                             monitorFfs->mCv.notify_all();
+                        } else {
+                            monitorFfs->mWriteUdcLastError = errno;
+                            ALOGE("Failed to pull up Gadget, err:%d %s", errno, strerror(errno));
                         }
                     }
                 }
@@ -305,6 +316,28 @@ void MonitorFfs::registerFunctionsAppliedCallback(void (*callback)(bool function
                                                   void *payload) {
     mCallback = callback;
     mPayload = payload;
+}
+
+void MonitorFfs::dump(int fd) {
+    std::string result = "MonitorFfs Dump:\n";
+
+    StringAppendF(&result, "    mMonitorRunning:%s\n", mMonitorRunning ? "yes" : "no");
+    StringAppendF(&result, "    mCurrentUsbFunctionsApplied:%s\n",
+                  mCurrentUsbFunctionsApplied ? "yes" : "no");
+    StringAppendF(&result, "    gadgetPullup:%s\n", gadgetPullup ? "yes" : "no");
+    StringAppendF(&result, "    mFfsEndpointsPresent:%s\n", mFfsEndpointsPresent ? "yes" : "no");
+    StringAppendF(&result, "    mWriteUdc:%s\n", mWriteUdc ? "yes" : "no");
+    StringAppendF(&result, "    mWriteUdcLastError:%d %s\n", mWriteUdcLastError,
+                  strerror(mWriteUdcLastError));
+
+    result += "    mEndpointList:";
+    for (const std::string& ep : mEndpointList) {
+        StringAppendF(&result, "%s, ", ep.c_str());
+    }
+    result += "\n";
+    if (!base::WriteStringToFd(result, fd)) {
+        ALOGE("Failed to write to dump file descriptor");
+    }
 }
 
 }  // namespace usb

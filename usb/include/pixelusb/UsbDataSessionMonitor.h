@@ -62,8 +62,10 @@ class UsbDataSessionMonitor {
     ~UsbDataSessionMonitor();
     // Returns the compliance warnings detected in the current data session.
     void getComplianceWarnings(const PortDataRole &role, std::vector<ComplianceWarning> *warnings);
-
+    // Dumps the state to fd
+    void dump(int fd);
   private:
+    // Represents the state of the device in either host mode or gadget mode.
     struct usbDeviceState {
         // The name of the usb device, e.g. udc, host1, host2.
         std::string name;
@@ -76,7 +78,6 @@ class UsbDataSessionMonitor {
         // Timestamps of when the usb device states were captured
         std::vector<boot_clock::time_point> timestamps;
     };
-
     static void *monitorThread(void *param);
     void handleUevent();
     void handleTimerEvent();
@@ -88,6 +89,8 @@ class UsbDataSessionMonitor {
     void evaluateComplianceWarning();
     void notifyComplianceWarning();
     void updateUdcBindStatus(const std::string &devname);
+    void printState(const struct usbDeviceState *state, boot_clock::time_point startTime,
+                    std::string *result);
 
     pthread_t mMonitor;
     unique_fd mPipefd0;
