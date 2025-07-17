@@ -21,6 +21,7 @@
 #include <android-base/chrono_utils.h>
 #include <android-base/unique_fd.h>
 
+#include <functional>
 #include <set>
 #include <string>
 #include <vector>
