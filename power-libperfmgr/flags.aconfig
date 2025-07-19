@@ -14,3 +14,10 @@ flag {
     description: "Transition from using hardcoded gpu expensive rendering to load up signal"
     bug: "417494383"
 }
+
+flag {
+    namespace: "pixel_perf"
+    name: "initial_hboost_severe"
+    description: "This flag causes all ADPF heuristic boost sessions to be initialized to the severe janky level until workload data is available"
+    bug: "395187033"
+}

@@ -19,6 +19,7 @@
 #include <android-base/parseint.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <powerhal_flags.h>
 #include <sys/syscall.h>
 
 #include <chrono>
@@ -31,6 +32,7 @@
 
 #include "TestHelper.h"
 #include "mocks/MockHintManager.h"
+#include "mocks/MockPowerHalFlagsProviderInterface.h"
 #include "mocks/MockPowerSessionManager.h"
 #include "perfmgr/AdpfConfig.h"
 
@@ -203,6 +205,13 @@ class PowerHintSessionMockedTest : public Test {
     }
 
   protected:
+    void setInitialHboostSevereFlag(bool flag_value) {
+        auto mock_flag_provider =
+                std::make_unique<mock::pixel::MockPowerHalFlagsProviderInterface>();
+        ON_CALL(*mock_flag_provider, initial_hboost_severe())
+                .WillByDefault(::testing::Return(flag_value));
+        powerhal::flags::provider_ = std::move(mock_flag_provider);
+    }
     std::shared_ptr<::android::perfmgr::AdpfConfig> mTestConfig;
     std::shared_ptr<TestingPowerHintSession> mHintSession;
     NiceMock<mock::pixel::MockHintManager> *mMockHintManager;
@@ -335,39 +344,48 @@ TEST_F(PowerHintSessionTest, checkPauseResumeTag) {
 TEST_F(PowerHintSessionMockedTest, updateSessionJankState) {
     // Low FPS
     ASSERT_EQ(SessionJankyLevel::LIGHT,
-              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 8, 5.0, true));
+              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 8, 5.0, true, true));
+    ASSERT_EQ(SessionJankyLevel::LIGHT, mHintSession->updateSessionJankState(
+                                                SessionJankyLevel::MODERATE, 8, 5.0, true, true));
     ASSERT_EQ(SessionJankyLevel::LIGHT,
-              mHintSession->updateSessionJankState(SessionJankyLevel::MODERATE, 8, 5.0, true));
-    ASSERT_EQ(SessionJankyLevel::LIGHT,
-              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 8, 5.0, true));
+              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 8, 5.0, true, true));
     // Light number of jank frames, and high workload duration variance.
     ASSERT_EQ(SessionJankyLevel::MODERATE,
-              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 1, 5.0, false));
-    ASSERT_EQ(SessionJankyLevel::MODERATE,
-              mHintSession->updateSessionJankState(SessionJankyLevel::MODERATE, 1, 5.0, false));
+              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 1, 5.0, false, true));
+    ASSERT_EQ(
+            SessionJankyLevel::MODERATE,
+            mHintSession->updateSessionJankState(SessionJankyLevel::MODERATE, 1, 5.0, false, true));
     ASSERT_EQ(SessionJankyLevel::LIGHT,
-              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 1, 5.0, false));
+              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 1, 5.0, false, true));
     // Light number of jank frames, and low workload duration variance.
     ASSERT_EQ(SessionJankyLevel::LIGHT,
-              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 1, 1.0, false));
+              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 1, 1.0, false, true));
+    ASSERT_EQ(SessionJankyLevel::LIGHT, mHintSession->updateSessionJankState(
+                                                SessionJankyLevel::MODERATE, 1, 1.0, false, true));
     ASSERT_EQ(SessionJankyLevel::LIGHT,
-              mHintSession->updateSessionJankState(SessionJankyLevel::MODERATE, 1, 1.0, false));
-    ASSERT_EQ(SessionJankyLevel::LIGHT,
-              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 1, 1.0, false));
+              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 1, 1.0, false, true));
     // Moderate number of jank frames
     ASSERT_EQ(SessionJankyLevel::MODERATE,
-              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 4, 5.0, false));
+              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 4, 5.0, false, true));
+    ASSERT_EQ(
+            SessionJankyLevel::MODERATE,
+            mHintSession->updateSessionJankState(SessionJankyLevel::MODERATE, 4, 5.0, false, true));
     ASSERT_EQ(SessionJankyLevel::MODERATE,
-              mHintSession->updateSessionJankState(SessionJankyLevel::MODERATE, 4, 5.0, false));
-    ASSERT_EQ(SessionJankyLevel::MODERATE,
-              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 4, 5.0, false));
+              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 4, 5.0, false, true));
     // Significant number of jank frames
     ASSERT_EQ(SessionJankyLevel::SEVERE,
-              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 9, 5.0, false));
+              mHintSession->updateSessionJankState(SessionJankyLevel::SEVERE, 9, 5.0, false, true));
+    ASSERT_EQ(SessionJankyLevel::SEVERE, mHintSession->updateSessionJankState(
+                                                 SessionJankyLevel::MODERATE, 9, 5.0, false, true));
     ASSERT_EQ(SessionJankyLevel::SEVERE,
-              mHintSession->updateSessionJankState(SessionJankyLevel::MODERATE, 9, 5.0, false));
-    ASSERT_EQ(SessionJankyLevel::SEVERE,
-              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 9, 5.0, false));
+              mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 9, 5.0, false, true));
+    // Records not all initialized
+    setInitialHboostSevereFlag(true);
+    ASSERT_EQ(SessionJankyLevel::SEVERE, mHintSession->updateSessionJankState(
+                                                 SessionJankyLevel::SEVERE, 1, 1.0, false, false));
+    setInitialHboostSevereFlag(false);
+    ASSERT_EQ(SessionJankyLevel::LIGHT, mHintSession->updateSessionJankState(
+                                                SessionJankyLevel::SEVERE, 1, 1.0, false, false));
 }
 
 using TestingPowerHintSessionHintMocked =

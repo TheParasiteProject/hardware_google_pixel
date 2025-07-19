@@ -35,8 +35,7 @@ namespace pixel {
 using aidl::android::frameworks::stats::VendorAtom;
 using aidl::android::frameworks::stats::VendorAtomValue;
 using android::base::ReadFileToString;
-using android::hardware::google::pixel::PixelAtoms::BatteryEEPROM;
-using android::hardware::google::pixel::PixelAtoms::FuelGaugeAbnormalityReported;
+using android::hardware::google::pixel::PixelAtoms::BatteryFuelGaugeReported;
 
 
 BatteryFGReporter::BatteryFGReporter() {}
@@ -48,7 +47,9 @@ int64_t BatteryFGReporter::getTimeSecs() {
 void BatteryFGReporter::reportFGEvent(const std::shared_ptr<IStats> &stats_client,
                                       struct BatteryFGPipeline &data) {
     // Load values array
-    std::vector<VendorAtomValue> values(kNumFGPipelineFields);
+    std::vector<VendorAtomValue> values(5);
+    std::vector<int32_t> fg_data_vec;
+    BatteryFuelGaugeReported report_msg;
 
     if (data.event >= kNumMaxEvents) {
         ALOGE("Exceed max number of events, expected=%d, event=%d",
@@ -85,77 +86,56 @@ void BatteryFGReporter::reportFGEvent(const std::shared_ptr<IStats> &stats_clien
      */
     data.state += 1;
 
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kEventFieldNumber, data.event);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kEventStateFieldNumber, data.state);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kDurationSecsFieldNumber,
-                      data.duration);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress1FieldNumber,
-                      data.addr01);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData1FieldNumber,
-                      data.data01);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress2FieldNumber,
-                      data.addr02);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData2FieldNumber,
-                      data.data02);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress3FieldNumber,
-                      data.addr03);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData3FieldNumber,
-                      data.data03);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress4FieldNumber,
-                      data.addr04);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData4FieldNumber,
-                      data.data04);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress5FieldNumber,
-                      data.addr05);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData5FieldNumber,
-                      data.data05);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress6FieldNumber,
-                      data.addr06);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData6FieldNumber,
-                      data.data06);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress7FieldNumber,
-                      data.addr07);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData7FieldNumber,
-                      data.data07);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress8FieldNumber,
-                      data.addr08);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData8FieldNumber,
-                      data.data08);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress9FieldNumber,
-                      data.addr09);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData9FieldNumber,
-                      data.data09);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress10FieldNumber,
-                      data.addr10);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData10FieldNumber,
-                      data.data10);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress11FieldNumber,
-                      data.addr11);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData11FieldNumber,
-                      data.data11);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress12FieldNumber,
-                      data.addr12);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData12FieldNumber,
-                      data.data12);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress13FieldNumber,
-                      data.addr13);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData13FieldNumber,
-                      data.data13);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress14FieldNumber,
-                      data.addr14);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData14FieldNumber,
-                      data.data14);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress15FieldNumber,
-                      data.addr15);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData15FieldNumber,
-                      data.data15);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterAddress16FieldNumber,
-                      data.addr16);
-    setAtomFieldValue(&values, FuelGaugeAbnormalityReported::kFgRegisterData16FieldNumber,
-                      data.data16);
+    report_msg.set_unix_time_sec(data.duration);
+    report_msg.set_data_type(EvtFGAbnormalEvent);
+    report_msg.set_data_event(data.event);
+    report_msg.set_fg_index(BatteryFuelGaugeReported::PRIMARY);
+    report_msg.add_fg_data(data.state);
+    report_msg.add_fg_data(data.addr01);
+    report_msg.add_fg_data(data.data01);
+    report_msg.add_fg_data(data.addr02);
+    report_msg.add_fg_data(data.data02);
+    report_msg.add_fg_data(data.addr03);
+    report_msg.add_fg_data(data.data03);
+    report_msg.add_fg_data(data.addr04);
+    report_msg.add_fg_data(data.data04);
+    report_msg.add_fg_data(data.addr05);
+    report_msg.add_fg_data(data.data05);
+    report_msg.add_fg_data(data.addr06);
+    report_msg.add_fg_data(data.data06);
+    report_msg.add_fg_data(data.addr07);
+    report_msg.add_fg_data(data.data07);
+    report_msg.add_fg_data(data.addr08);
+    report_msg.add_fg_data(data.data08);
+    report_msg.add_fg_data(data.addr09);
+    report_msg.add_fg_data(data.data09);
+    report_msg.add_fg_data(data.addr10);
+    report_msg.add_fg_data(data.data10);
+    report_msg.add_fg_data(data.addr11);
+    report_msg.add_fg_data(data.data11);
+    report_msg.add_fg_data(data.addr12);
+    report_msg.add_fg_data(data.data12);
+    report_msg.add_fg_data(data.addr13);
+    report_msg.add_fg_data(data.data13);
+    report_msg.add_fg_data(data.addr14);
+    report_msg.add_fg_data(data.data14);
+    report_msg.add_fg_data(data.addr15);
+    report_msg.add_fg_data(data.data15);
+    report_msg.add_fg_data(data.addr16);
+    report_msg.add_fg_data(data.data16);
+
+    values[0].set<VendorAtomValue::longValue>(report_msg.unix_time_sec());
+    values[1].set<VendorAtomValue::intValue>(report_msg.data_type());
+    values[2].set<VendorAtomValue::intValue>(report_msg.data_event());
+    values[3].set<VendorAtomValue::intValue>(report_msg.fg_index());
+
+    for (int32_t val : report_msg.fg_data()) {
+        fg_data_vec.push_back(val);
+    }
+    values[4].set<VendorAtomValue::repeatedIntValue>(fg_data_vec);
 
     VendorAtom event = {.reverseDomainName = "",
-                        .atomId = PixelAtoms::Atom::kFuelGaugeAbnormalityReported,
+                        .atomId = PixelAtoms::Atom::kBatteryFuelGaugeReported,
                         .values = std::move(values)};
     reportVendorAtom(stats_client, event);
 }
