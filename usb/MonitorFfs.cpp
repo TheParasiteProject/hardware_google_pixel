@@ -160,6 +160,9 @@ void *MonitorFfs::startMonitorFd(void *param) {
         } else {
             monitorFfs->mWriteUdcLastError = errno;
             ALOGE("Failed to pull up Gadget, err:%d %s", errno, strerror(errno));
+            if (WriteStringToFile("none", PULLUP_PATH)) {
+                ALOGI("clear Gadget due to the failure");
+            }
         }
     }
 
@@ -201,6 +204,11 @@ void *MonitorFfs::startMonitorFd(void *param) {
                         ALOGI("endpoints not up");
                         monitorFfs->mWriteUdc = true;
                         gadgetPullup = false;
+
+                        if (WriteStringToFile("none", PULLUP_PATH)) {
+                            ALOGI("GADGET pulled down");
+                        }
+
                         disconnect = std::chrono::steady_clock::now();
                     } else if (monitorFfs->mFfsEndpointsPresent && monitorFfs->mWriteUdc) {
                         steady_clock::time_point temp = steady_clock::now();
@@ -223,6 +231,9 @@ void *MonitorFfs::startMonitorFd(void *param) {
                         } else {
                             monitorFfs->mWriteUdcLastError = errno;
                             ALOGE("Failed to pull up Gadget, err:%d %s", errno, strerror(errno));
+                            if (WriteStringToFile("none", PULLUP_PATH)) {
+                                ALOGI("clear Gadget due to the failure");
+                            }
                         }
                     }
                 }
