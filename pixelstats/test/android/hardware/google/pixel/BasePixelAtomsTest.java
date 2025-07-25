@@ -42,16 +42,21 @@ public abstract class BasePixelAtomsTest {
                     fail("Atom id not in vendor range");
                 }
                 String atomName = field.getName();
+
+                Descriptors.Descriptor message = field.getMessageType();
+
                 assertWithMessage(atomName + " field 1 should not be empty")
-                        .that(field.getMessageType().findFieldByNumber(1))
+                        .that(message.findFieldByNumber(1))
                         .isNotNull();
                 assertWithMessage(atomName + "field 1 should be of string type")
-                        .that(field.getMessageType().findFieldByNumber(1).getType())
+                        .that(message.findFieldByNumber(1).getType())
                         .isEqualTo(Descriptors.FieldDescriptor.Type.STRING);
-                assertWithMessage(atomName +
-                        " should contain reverse_domain_name as field 1.")
-                        .that(field.getMessageType().findFieldByNumber(1).getName())
+                assertWithMessage(atomName + " should contain reverse_domain_name as field 1.")
+                        .that(message.findFieldByNumber(1).getName())
                         .isEqualTo("reverse_domain_name");
+                assertWithMessage(atomName + " has more than 127 fields.")
+                        .that(field.getMessageType().getFields().size())
+                        .isLessThan(128);
             }
         }
     }
