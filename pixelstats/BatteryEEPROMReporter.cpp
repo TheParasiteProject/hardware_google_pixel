@@ -469,51 +469,6 @@ void BatteryEEPROMReporter::checkAndReportFGLearning(const std::shared_ptr<IStat
     last_lh_check_ = (unsigned int)boot_time.tv_sec;
 }
 
-void BatteryEEPROMReporter::checkAndReportHistValid(const std::shared_ptr<IStats> &stats_client,
-                                                     const std::vector<std::string> &paths) {
-    struct BatteryEEPROMPipeline params = {.checksum = EvtHistoryValidation};
-    std::string path = checkPaths(paths);
-    struct timespec boot_time;
-    std::vector<std::vector<uint32_t>> events;
-
-    if (path.empty())
-        return;
-
-    clock_gettime(CLOCK_MONOTONIC, &boot_time);
-
-    readLogbuffer(path, kNumValidationFieldsV2, params.checksum, FormatOnlyVal, last_hv_check_,
-                  events);
-    if (events.size() == 0)
-        readLogbuffer(path, kNumValidationFields, params.checksum, FormatIgnoreAddr,
-                      last_hv_check_, events);
-
-    for (int event_idx = 0; event_idx < events.size(); event_idx++) {
-        std::vector<uint32_t> &event = events[event_idx];
-        if (event.size() == kNumValidationFields) {
-            params.full_cap = event[0]; /* first empty entry */
-            params.esr = event[1];      /* num of entries need to be recovered or fix result */
-            params.rslow = event[2];    /* last cycle count */
-            params.full_rep = event[3]; /* estimate cycle count after recovery */
-            reportEvent(stats_client, params);
-        } else if (event.size() == kNumValidationFieldsV2) {
-            params.cycle_cnt = event[0];/* log type */
-            params.full_cap = event[1]; /* first empty entry */
-            params.esr = event[2];      /* first misplaced entry */
-            params.rslow = event[3];    /* first migrated entry */
-            params.batt_temp = event[4];/* last migrated entry */
-            params.cutoff_soc = event[5];/* last cycle count */
-            params.cc_soc = event[6];   /* current cycle count */
-            params.sys_soc = event[7];  /* eeprom cycle count */
-            params.msoc = event[8];     /* result */
-            params.soh = event[9];      /* unix time */
-            reportEvent(stats_client, params);
-        } else {
-            ALOGE("Not support %zu fields for History Validation event", event.size());
-        }
-    }
-    last_hv_check_ = (unsigned int)boot_time.tv_sec;
-}
-
 }  // namespace pixel
 }  // namespace google
 }  // namespace hardware
