@@ -21,6 +21,7 @@
 #include <string>
 
 #include <aidl/android/frameworks/stats/IStats.h>
+#include <hardware/google/pixel/pixelstats/pixelatoms.pb.h>
 
 namespace android {
 namespace hardware {
@@ -29,6 +30,7 @@ namespace pixel {
 
 using aidl::android::frameworks::stats::IStats;
 using aidl::android::frameworks::stats::VendorAtomValue;
+using android::hardware::google::pixel::PixelAtoms::BatteryFuelGaugeReported;
 
 class BatteryFGReporter {
   public:
@@ -36,6 +38,7 @@ class BatteryFGReporter {
 
     void checkAndReportFwUpdate(const std::shared_ptr<IStats> &stats_client, const std::string &path);
     void checkAndReportFGAbnormality(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
+    void checkAndReportHistValid(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
 
   private:
     const int kVendorAtomOffset = 2;
@@ -83,7 +86,14 @@ class BatteryFGReporter {
     unsigned int last_ab_check_ = 0;
     static constexpr unsigned int kNumMaxEvents = 8;
     unsigned int ab_trigger_time_[kNumMaxEvents] = {0};
-    void reportFGEvent(const std::shared_ptr<IStats> &stats_client, struct BatteryFGPipeline &data);
+    /* The number of elements for history validation event */
+    const int kNumValidationFields = 10;
+    unsigned int last_hv_check_ = 0;
+
+    std::string getValidPath(const std::vector<std::string> &paths);
+    void reportFGAbEvent(const std::shared_ptr<IStats> &stats_client, struct BatteryFGPipeline &data);
+    void convertAndReportFuelGaugeAtom(const std::shared_ptr<IStats> &stats_client,
+                                       const BatteryFuelGaugeReported &report_msg);
 
     const int kNumFGPipelineFields = sizeof(BatteryFGPipeline) / sizeof(int32_t);
 };

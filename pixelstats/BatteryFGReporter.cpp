@@ -25,7 +25,6 @@
 #include <android-base/file.h>
 #include <pixelstats/BatteryFGReporter.h>
 #include <pixelstats/StatsHelper.h>
-#include <hardware/google/pixel/pixelstats/pixelatoms.pb.h>
 
 namespace android {
 namespace hardware {
@@ -35,7 +34,6 @@ namespace pixel {
 using aidl::android::frameworks::stats::VendorAtom;
 using aidl::android::frameworks::stats::VendorAtomValue;
 using android::base::ReadFileToString;
-using android::hardware::google::pixel::PixelAtoms::BatteryFuelGaugeReported;
 
 
 BatteryFGReporter::BatteryFGReporter() {}
@@ -44,11 +42,42 @@ int64_t BatteryFGReporter::getTimeSecs() {
     return nanoseconds_to_seconds(systemTime(SYSTEM_TIME_BOOTTIME));
 }
 
-void BatteryFGReporter::reportFGEvent(const std::shared_ptr<IStats> &stats_client,
-                                      struct BatteryFGPipeline &data) {
-    // Load values array
+void BatteryFGReporter::convertAndReportFuelGaugeAtom(const std::shared_ptr<IStats> &stats_client,
+                                                      const BatteryFuelGaugeReported &report_msg) {
     std::vector<VendorAtomValue> values(5);
     std::vector<int32_t> fg_data_vec;
+
+    values[0].set<VendorAtomValue::longValue>(report_msg.unix_time_sec());
+    values[1].set<VendorAtomValue::intValue>(report_msg.data_type());
+    values[2].set<VendorAtomValue::intValue>(report_msg.data_event());
+    values[3].set<VendorAtomValue::intValue>(report_msg.fg_index());
+
+    for (int32_t val : report_msg.fg_data()) {
+        fg_data_vec.push_back(val);
+    }
+    values[4].set<VendorAtomValue::repeatedIntValue>(fg_data_vec);
+
+    VendorAtom event = {.reverseDomainName = "",
+                        .atomId = PixelAtoms::Atom::kBatteryFuelGaugeReported,
+                        .values = std::move(values)};
+    reportVendorAtom(stats_client, event);
+}
+
+std::string BatteryFGReporter::getValidPath(const std::vector<std::string> &paths) {
+    if (paths.empty()) {
+        return ""; // Return empty string if no paths provided
+    }
+
+    for (const auto& path : paths) { // Using range-based for loop for cleaner iteration
+        if (fileExists(path)) {
+            return path; // Return the first existing path
+        }
+    }
+    return ""; // Return empty string if no existing path is found
+}
+
+void BatteryFGReporter::reportFGAbEvent(const std::shared_ptr<IStats> &stats_client,
+                                        struct BatteryFGPipeline &data) {
     BatteryFuelGaugeReported report_msg;
 
     if (data.event >= kNumMaxEvents) {
@@ -124,37 +153,17 @@ void BatteryFGReporter::reportFGEvent(const std::shared_ptr<IStats> &stats_clien
     report_msg.add_fg_data(data.addr16);
     report_msg.add_fg_data(data.data16);
 
-    values[0].set<VendorAtomValue::longValue>(report_msg.unix_time_sec());
-    values[1].set<VendorAtomValue::intValue>(report_msg.data_type());
-    values[2].set<VendorAtomValue::intValue>(report_msg.data_event());
-    values[3].set<VendorAtomValue::intValue>(report_msg.fg_index());
-
-    for (int32_t val : report_msg.fg_data()) {
-        fg_data_vec.push_back(val);
-    }
-    values[4].set<VendorAtomValue::repeatedIntValue>(fg_data_vec);
-
-    VendorAtom event = {.reverseDomainName = "",
-                        .atomId = PixelAtoms::Atom::kBatteryFuelGaugeReported,
-                        .values = std::move(values)};
-    reportVendorAtom(stats_client, event);
+    convertAndReportFuelGaugeAtom(stats_client, report_msg);
 }
 
 void BatteryFGReporter::checkAndReportFGAbnormality(const std::shared_ptr<IStats> &stats_client,
                                                     const std::vector<std::string> &paths) {
-    std::string path;
+    std::string path = getValidPath(paths);
     struct timespec boot_time;
     std::vector<std::vector<uint32_t>> events;
 
     if (paths.empty())
         return;
-
-    for (int i = 0; i < paths.size(); i++) {
-        if (fileExists(paths[i])) {
-            path = paths[i];
-            break;
-        }
-    }
 
     clock_gettime(CLOCK_MONOTONIC, &boot_time);
     readLogbuffer(path, kNumFGPipelineFields, EvtFGAbnormalEvent, FormatOnlyVal, last_ab_check_,
@@ -163,13 +172,52 @@ void BatteryFGReporter::checkAndReportFGAbnormality(const std::shared_ptr<IStats
         if (events[seq].size() == kNumFGPipelineFields) {
             struct BatteryFGPipeline data;
             std::copy(events[seq].begin(), events[seq].end(), (int32_t *)&data);
-            reportFGEvent(stats_client, data);
+            reportFGAbEvent(stats_client, data);
         } else {
             ALOGE("Not support %zu fields for FG abnormal event", events[seq].size());
         }
     }
 
     last_ab_check_ = (unsigned int)boot_time.tv_sec;
+}
+
+void BatteryFGReporter::checkAndReportHistValid(const std::shared_ptr<IStats> &stats_client,
+                                                const std::vector<std::string> &paths) {
+    std::string path = getValidPath(paths);;
+    struct timespec boot_time;
+    std::vector<std::vector<uint32_t>> events;
+    BatteryFuelGaugeReported report_msg;
+
+    if (path.empty())
+        return;
+
+    clock_gettime(CLOCK_MONOTONIC, &boot_time);
+
+    readLogbuffer(path, kNumValidationFields, EvtHistoryValidation, FormatOnlyVal, last_hv_check_,
+                  events);
+
+    for (int event_idx = 0; event_idx < events.size(); event_idx++) {
+        std::vector<uint32_t> &event = events[event_idx];
+        if (event.size() == kNumValidationFields) {
+            report_msg.set_data_type(EvtHistoryValidation);
+            report_msg.set_fg_index(BatteryFuelGaugeReported::PRIMARY);
+            report_msg.set_data_event(event[0]);    /* log type */
+            report_msg.add_fg_data(event[1]);       /* first empty entry */
+            report_msg.add_fg_data(event[2]);       /* first misplaced entry */
+            report_msg.add_fg_data(event[3]);       /* first migrated entry */
+            report_msg.add_fg_data(event[4]);       /* last migrated entry */
+            report_msg.add_fg_data(event[5]);       /* last cycle count */
+            report_msg.add_fg_data(event[6]);       /* current cycle count */
+            report_msg.add_fg_data(event[7]);       /* eeprom cycle count */
+            report_msg.add_fg_data(event[8]);       /* result */
+            report_msg.set_unix_time_sec(event[9]); /* unix time */
+
+            convertAndReportFuelGaugeAtom(stats_client, report_msg);
+        } else {
+            ALOGE("Not support %zu fields for History Validation event", event.size());
+        }
+    }
+    last_hv_check_ = (unsigned int)boot_time.tv_sec;
 }
 
 }  // namespace pixel

@@ -44,8 +44,6 @@ class BatteryEEPROMReporter {
                                   const std::vector<std::string> &paths);
     void checkAndReportFGModelLoading(const std::shared_ptr<IStats> &stats_client,
                                       const std::vector<std::string> &paths);
-    void checkAndReportHistValid(const std::shared_ptr<IStats> &stats_client,
-                                  const std::vector<std::string> &paths);
 
   private:
 
@@ -56,10 +54,6 @@ class BatteryEEPROMReporter {
     /* with COTRIM/COFF/LOCK fields */
     const int kNumFGLearningFieldsV4 = 21;
     unsigned int last_lh_check_ = 0;
-    /* The number of elements for history validation event */
-    const int kNumValidationFields = 4;
-    const int kNumValidationFieldsV2 = 10;
-    unsigned int last_hv_check_ = 0;
     int last_cycle_count = 0;
 
     /* P21+ history format */
