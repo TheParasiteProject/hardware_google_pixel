@@ -40,20 +40,10 @@ class BatteryEEPROMReporter {
     void checkAndReportGMSR(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
     void checkAndReportMaxfgHistory(const std::shared_ptr<IStats> &stats_client,
                                     const std::string &path);
-    void checkAndReportFGLearning(const std::shared_ptr<IStats> &stats_client,
-                                  const std::vector<std::string> &paths);
     void checkAndReportFGModelLoading(const std::shared_ptr<IStats> &stats_client,
                                       const std::vector<std::string> &paths);
 
   private:
-
-    /* The number of elements for relaxation event */
-    const int kNumFGLearningFieldsV2 = 16;
-    /* with additional unix time field */
-    const int kNumFGLearningFieldsV3 = 17;
-    /* with COTRIM/COFF/LOCK fields */
-    const int kNumFGLearningFieldsV4 = 21;
-    unsigned int last_lh_check_ = 0;
     int last_cycle_count = 0;
 
     /* P21+ history format */

@@ -39,6 +39,7 @@ class BatteryFGReporter {
     void checkAndReportFwUpdate(const std::shared_ptr<IStats> &stats_client, const std::string &path);
     void checkAndReportFGAbnormality(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
     void checkAndReportHistValid(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
+    void checkAndReportFGLearning(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
 
   private:
     const int kVendorAtomOffset = 2;
@@ -86,11 +87,16 @@ class BatteryFGReporter {
     unsigned int last_ab_check_ = 0;
     static constexpr unsigned int kNumMaxEvents = 8;
     unsigned int ab_trigger_time_[kNumMaxEvents] = {0};
+    /* The number of elements for relaxation event */
+    const int kNumFGLearningFields = 17;
+    const int kNumFGLearningFieldsV2 = 21;
     /* The number of elements for history validation event */
     const int kNumValidationFields = 10;
     unsigned int last_hv_check_ = 0;
+    unsigned int last_lh_check_ = 0;
 
     std::string getValidPath(const std::vector<std::string> &paths);
+    std::vector<std::string> getValidPaths(const std::vector<std::string> &paths);
     void reportFGAbEvent(const std::shared_ptr<IStats> &stats_client, struct BatteryFGPipeline &data);
     void convertAndReportFuelGaugeAtom(const std::shared_ptr<IStats> &stats_client,
                                        const BatteryFuelGaugeReported &report_msg);
