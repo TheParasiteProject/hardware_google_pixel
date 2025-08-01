@@ -192,6 +192,7 @@ class PowerHintSessionMockedTest : public Test {
         ON_CALL(*mMockHintManager, GetAdpfProfile()).WillByDefault(Return(mTestConfig));
 
         mMockPowerSessionManager = NiceMock<mock::pixel::MockPowerSessionManager>::getInstance();
+        setInitialHboostSevereFlag(true);
         mHintSession = ndk::SharedRefBase::make<TestingPowerHintSession>(mTgid, mUid, mTids, 1,
                                                                          SessionTag::OTHER);
     }
@@ -211,6 +212,14 @@ class PowerHintSessionMockedTest : public Test {
         ON_CALL(*mock_flag_provider, initial_hboost_severe())
                 .WillByDefault(::testing::Return(flag_value));
         powerhal::flags::provider_ = std::move(mock_flag_provider);
+    }
+
+    void recreateHintSession() {
+        if (mHintSession) {
+            mHintSession->close();
+        }
+        mHintSession = ndk::SharedRefBase::make<TestingPowerHintSession>(mTgid, mUid, mTids, 1,
+                                                                         SessionTag::OTHER);
     }
     std::shared_ptr<::android::perfmgr::AdpfConfig> mTestConfig;
     std::shared_ptr<TestingPowerHintSession> mHintSession;
@@ -380,10 +389,11 @@ TEST_F(PowerHintSessionMockedTest, updateSessionJankState) {
     ASSERT_EQ(SessionJankyLevel::SEVERE,
               mHintSession->updateSessionJankState(SessionJankyLevel::LIGHT, 9, 5.0, false, true));
     // Records not all initialized
-    setInitialHboostSevereFlag(true);
     ASSERT_EQ(SessionJankyLevel::SEVERE, mHintSession->updateSessionJankState(
                                                  SessionJankyLevel::SEVERE, 1, 1.0, false, false));
+
     setInitialHboostSevereFlag(false);
+    recreateHintSession();
     ASSERT_EQ(SessionJankyLevel::LIGHT, mHintSession->updateSessionJankState(
                                                 SessionJankyLevel::SEVERE, 1, 1.0, false, false));
 }
