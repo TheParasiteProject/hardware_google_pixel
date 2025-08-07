@@ -178,7 +178,7 @@ void SysfsCollector::logBatteryEEPROM(const std::shared_ptr<IStats> &stats_clien
     battery_EEPROM_reporter_.checkAndReportGMSR(stats_client, GMSRPath);
     battery_EEPROM_reporter_.checkAndReportMaxfgHistory(stats_client, maxfgHistoryPath);
     battery_EEPROM_reporter_.checkAndReportFGModelLoading(stats_client, FGModelLoadingPath);
-    battery_EEPROM_reporter_.checkAndReportFGLearning(stats_client, FGLogBufferPath);
+    battery_fg_reporter_.checkAndReportFGLearning(stats_client, FGLogBufferPath);
     battery_fg_reporter_.checkAndReportHistValid(stats_client, FGLogBufferPath);
 }
 
