@@ -332,7 +332,7 @@ void UsbDataSessionMonitor::handleDeviceStateEvent(struct usbDeviceState *device
     read(deviceState->fd.get(), &state, USB_STATE_MAX_LEN);
 
     if (kValidStates.find(state) == kValidStates.end()) {
-        ALOGE("Invalid state %s: %s", deviceState->name.c_str(), state);
+        ALOGD("Invalid state %s: %s", deviceState->name.c_str(), state);
         return;
     }
 
