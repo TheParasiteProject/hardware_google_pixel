@@ -412,63 +412,6 @@ void BatteryEEPROMReporter::checkAndReportFGModelLoading(const std::shared_ptr<I
     reportEvent(client, params);
 }
 
-void BatteryEEPROMReporter::checkAndReportFGLearning(const std::shared_ptr<IStats> &stats_client,
-                                                     const std::vector<std::string> &paths) {
-    struct BatteryEEPROMPipeline params = {.checksum = EvtFGLearningHistory};
-    std::string path = checkPaths(paths);
-    struct timespec boot_time;
-    auto format = FormatIgnoreAddr;
-    std::vector<std::vector<uint32_t>> events;
-
-    if (path.empty())
-        return;
-
-    clock_gettime(CLOCK_MONOTONIC, &boot_time);
-
-    readLogbuffer(path, kNumFGLearningFieldsV4, params.checksum, format, last_lh_check_, events);
-    if (events.size() == 0)
-        readLogbuffer(path, kNumFGLearningFieldsV3, params.checksum, format, last_lh_check_, events);
-    if (events.size() == 0)
-        readLogbuffer(path, kNumFGLearningFieldsV2, params.checksum, format, last_lh_check_, events);
-
-    for (int event_idx = 0; event_idx < events.size(); event_idx++) {
-        std::vector<uint32_t> &event = events[event_idx];
-        if (event.size() == kNumFGLearningFieldsV2 ||
-            event.size() == kNumFGLearningFieldsV3 ||
-            event.size() == kNumFGLearningFieldsV4) {
-            params.full_cap = event[0];                /* fcnom */
-            params.esr = event[1];                     /* dpacc */
-            params.rslow = event[2];                   /* dqacc */
-            params.full_rep = event[3];                /* fcrep */
-            params.msoc = event[4] >> 8;               /* repsoc */
-            params.sys_soc = event[5] >> 8;            /* mixsoc */
-            params.batt_soc = event[6] >> 8;           /* vfsoc */
-            params.min_ibatt = event[7];               /* fstats */
-            params.max_temp = event[8] >> 8;           /* avgtemp */
-            params.min_temp = event[9] >> 8;           /* temp */
-            params.max_ibatt = event[10];              /* qh */
-            params.max_vbatt = event[11];              /* vcell */
-            params.min_vbatt = event[12];              /* avgvcell */
-            params.cycle_cnt = event[13];              /* vfocf */
-            params.rcomp0 = event[14];                 /* rcomp0 */
-            params.tempco = event[15];                 /* tempco */
-            if (event.size() >= kNumFGLearningFieldsV3)
-                params.soh = event[16];                /* unix time */
-            if (event.size() == kNumFGLearningFieldsV4) {
-                params.cutoff_soc = event[17];         /* cotrim */
-                params.cc_soc = event[18];             /* coff */
-                params.batt_temp = event[19];          /* lock_1 */
-                params.timer_h = event[20];            /* lock_2 */
-            }
-        } else {
-            ALOGE("Not support %zu fields for FG learning event", event.size());
-            continue;
-        }
-        reportEvent(stats_client, params);
-    }
-    last_lh_check_ = (unsigned int)boot_time.tv_sec;
-}
-
 }  // namespace pixel
 }  // namespace google
 }  // namespace hardware
