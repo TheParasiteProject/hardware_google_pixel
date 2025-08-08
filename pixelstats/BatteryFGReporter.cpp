@@ -296,6 +296,46 @@ void BatteryFGReporter::checkAndReportFGLearning(const std::shared_ptr<IStats> &
     last_lh_check_ = (unsigned int)boot_time.tv_sec;
 }
 
+void BatteryFGReporter::checkAndReportFGModelLoading(const std::shared_ptr<IStats> &stats_client,
+                                                     const std::vector<std::string> &paths) {
+    std::string path = getValidPath(paths);
+    std::string file_contents;
+    int num, model_next_update, att_cnt, fail_cnt;
+    const char *data;
+    BatteryFuelGaugeReported report_msg;
+
+    /* not found */
+    if (path.empty())
+        return;
+
+    if (!ReadFileToString(path, &file_contents)) {
+        ALOGE("Unable to read ModelLoading History path: %s - %s", path.c_str(), strerror(errno));
+        return;
+    }
+
+    data = file_contents.c_str();
+
+    num = sscanf(data, "ModelNextUpdate: %d%*[0-9a-f: \n]ATT: %x FAIL: %x",
+                 &model_next_update, &att_cnt, &fail_cnt);
+    if (num != 3) {
+        ALOGE("Couldn't process ModelLoading History. num=%d\n", num);
+        return;
+     }
+
+    /* don't need to report when attempts counter is zero */
+    if (att_cnt == 0)
+        return;
+
+    report_msg.set_data_type(EvtModelLoading);
+    report_msg.set_fg_index(BatteryFuelGaugeReported::PRIMARY);
+    report_msg.add_fg_data(model_next_update);
+    report_msg.add_fg_data(att_cnt);
+    report_msg.add_fg_data(fail_cnt);
+
+    convertAndReportFuelGaugeAtom(stats_client, report_msg);
+    report_msg.Clear();
+}
+
 }  // namespace pixel
 }  // namespace google
 }  // namespace hardware

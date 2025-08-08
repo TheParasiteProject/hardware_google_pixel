@@ -378,40 +378,6 @@ void BatteryEEPROMReporter::checkAndReportMaxfgHistory(const std::shared_ptr<ISt
     }
 }
 
-void BatteryEEPROMReporter::checkAndReportFGModelLoading(const std::shared_ptr<IStats> &client,
-                                                         const std::vector<std::string> &paths) {
-    struct BatteryEEPROMPipeline params = {.full_cap = 0, .esr = 0, .rslow = 0,
-                                    .checksum = EvtModelLoading, };
-    std::string path = checkPaths(paths);
-    std::string file_contents;
-    int num;
-    const char *data;
-
-    /* not found */
-    if (path.empty())
-        return;
-
-    if (!ReadFileToString(path, &file_contents)) {
-        ALOGE("Unable to read ModelLoading History path: %s - %s", path.c_str(), strerror(errno));
-        return;
-    }
-
-    data = file_contents.c_str();
-
-    num = sscanf(data, "ModelNextUpdate: %x%*[0-9a-f: \n]ATT: %x FAIL: %x",
-                 &params.rslow, &params.full_cap, &params.esr);
-    if (num != 3) {
-        ALOGE("Couldn't process ModelLoading History. num=%d\n", num);
-        return;
-     }
-
-    /* don't need to report when attempts counter is zero */
-    if (params.full_cap == 0)
-        return;
-
-    reportEvent(client, params);
-}
-
 }  // namespace pixel
 }  // namespace google
 }  // namespace hardware

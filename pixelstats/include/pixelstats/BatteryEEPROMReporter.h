@@ -40,8 +40,6 @@ class BatteryEEPROMReporter {
     void checkAndReportGMSR(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
     void checkAndReportMaxfgHistory(const std::shared_ptr<IStats> &stats_client,
                                     const std::string &path);
-    void checkAndReportFGModelLoading(const std::shared_ptr<IStats> &stats_client,
-                                      const std::vector<std::string> &paths);
 
   private:
     int last_cycle_count = 0;
