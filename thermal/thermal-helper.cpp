@@ -1719,7 +1719,6 @@ std::chrono::milliseconds ThermalHelperImpl::thermalWatcherCallbackFunc(
             continue;
         }
 
-        std::pair<ThrottlingSeverity, ThrottlingSeverity> throttling_status;
         const auto ret = readTemperature(name_status_pair.first, &temp, force_no_cache);
         if (ret == SensorReadStatus::ERROR) {
             LOG(ERROR) << __func__
