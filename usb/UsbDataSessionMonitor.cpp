@@ -108,7 +108,6 @@ UsbDataSessionMonitor::UsbDataSessionMonitor(
         const std::string &host1UeventRegex, const std::string &host1StatePath,
         const std::string &host2UeventRegex, const std::string &host2StatePath,
         const std::string &dataRolePath, std::function<void()> updatePortStatusCb) {
-    struct epoll_event ev;
     std::string udc;
     int pipefds[2];
 

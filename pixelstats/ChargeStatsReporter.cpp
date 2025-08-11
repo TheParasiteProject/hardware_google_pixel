@@ -80,7 +80,6 @@ void ChargeStatsReporter::ReportChargeStats(const std::shared_ptr<IStats> &stats
     };
     const int32_t chg_fields_size = std::size(charge_stats_fields);
     static_assert(chg_fields_size == 22, "Unexpected charge stats fields size");
-    const int32_t wlc_fields_size = 7;
     std::vector<VendorAtomValue> values(chg_fields_size);
     VendorAtomValue val;
     int32_t i = 0, tmp[chg_fields_size] = {0};
