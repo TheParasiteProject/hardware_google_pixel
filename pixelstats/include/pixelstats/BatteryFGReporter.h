@@ -40,6 +40,7 @@ class BatteryFGReporter {
     void checkAndReportFGAbnormality(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
     void checkAndReportHistValid(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
     void checkAndReportFGLearning(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
+    void checkAndReportFGModelLoading(const std::shared_ptr<IStats> &stats_client, const std::vector<std::string> &paths);
 
   private:
     const int kVendorAtomOffset = 2;

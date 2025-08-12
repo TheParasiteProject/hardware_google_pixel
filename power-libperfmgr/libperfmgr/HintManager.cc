@@ -54,6 +54,9 @@ constexpr std::string_view kConfigProperty("vendor.powerhal.config");
 constexpr std::string_view kConfigDefaultFileName("powerhint.json");
 constexpr char kAdpfEventNodePath[] = "<AdpfConfig>:";
 
+constexpr std::string_view kConfigDebugUsesFallback(
+        "persist.vendor.powerhal.config.debug.usefallback");
+
 bool HintManager::ValidateHint(const std::string& hint_type) const {
     if (nm_.get() == nullptr) {
         LOG(ERROR) << "NodeLooperThread not present";
@@ -339,10 +342,31 @@ std::unique_ptr<HintManager> HintManager::sInstance = nullptr;
 
 void HintManager::Reload(bool start) {
     std::string config_path = "/vendor/etc/";
-    if (android::base::GetBoolProperty(kConfigDebugPathProperty.data(), false)) {
-        config_path = "/data/vendor/etc/";
-        LOG(WARNING) << "Pixel Power HAL AIDL Service is using debug config from: " << config_path;
+    std::string debug_config_path = "/data/vendor/etc/";
+    bool usesDebug = false;
+
+    usesDebug = android::base::GetBoolProperty(kConfigDebugPathProperty.data(), false);
+    if (usesDebug) {
+        bool usesFallback = android::base::GetBoolProperty(kConfigDebugUsesFallback.data(), false);
+        debug_config_path.append(
+                GetProperty(kConfigProperty.data(), kConfigDefaultFileName.data()));
+        LOG(WARNING) << "Pixel Power HAL AIDL Service is starting with debug config: "
+                     << debug_config_path;
+        HintManager::GetFromJSON(debug_config_path, start);
+        if (!sInstance) {
+            if (usesFallback) {
+                LOG(ERROR) << "Invalid debug config: " << debug_config_path
+                           << " falling back to default.";
+            } else {
+                LOG(FATAL) << "Invalid debug config: " << debug_config_path;
+            }
+        } else {
+            LOG(WARNING) << "Pixel Power HAL AIDL Service successfully loaded debug config: "
+                         << debug_config_path;
+            return;
+        }
     }
+
     config_path.append(GetProperty(kConfigProperty.data(), kConfigDefaultFileName.data()));
 
     LOG(INFO) << "Pixel Power HAL AIDL Service with Extension is starting with config: "
