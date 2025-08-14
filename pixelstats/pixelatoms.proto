@@ -257,6 +257,7 @@ message ChargeStats {
     optional int32 aacc = 21;
     optional int32 aafv = 22;
     optional int32 max_charge_voltage = 23;
+    optional int32 aacc_chg_cc = 24;
 }
 
 /* A message containing stats from each charge voltage tier. */
