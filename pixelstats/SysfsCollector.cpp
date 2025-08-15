@@ -590,7 +590,12 @@ void SysfsCollector::logUFSLifetime(const std::shared_ptr<IStats> &stats_client)
 void SysfsCollector::logUFSErrorsCount(const std::shared_ptr<IStats> &stats_client) {
     std::string bootDevice = android::base::GetProperty("ro.boot.bootdevice", "");
     if (bootDevice.empty()) {
-        ALOGW("ro.boot.bootdevice property is empty.");
+        // Try ro.boot.boot_devices if ro.boot.bootdevice is not set
+        bootDevice = android::base::GetProperty("ro.boot.boot_devices", "");
+    }
+
+    if (bootDevice.empty()) {
+        ALOGW("Neither ro.boot.bootdevice nor ro.boot.boot_devices property is set.");
         return;
     }
 
