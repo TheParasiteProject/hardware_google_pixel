@@ -34,6 +34,7 @@
 
 #include "perfmgr/EventNode.h"
 #include "perfmgr/FileNode.h"
+#include "perfmgr/FlagProvider.h"
 #include "perfmgr/PropertyNode.h"
 
 namespace android {
@@ -142,6 +143,10 @@ void HintManager::DoHintAction(const std::string &hint_type) {
         if (!action.enable_property.empty() &&
             !android::base::GetBoolProperty(action.enable_property, true)) {
             // Disabled action based on its control property
+            continue;
+        }
+        if ((action.enable_flag != nullptr && !action.enable_flag()) ||
+            (action.disable_flag != nullptr && action.disable_flag())) {
             continue;
         }
         switch (action.type) {
@@ -379,6 +384,7 @@ void HintManager::Reload(bool start) {
 }
 
 HintManager *HintManager::GetInstance() {
+    FlagProvider::SetUp();
     if (sInstance == nullptr) {
         HintManager::Reload(false);
     }
@@ -750,6 +756,8 @@ std::unordered_map<std::string, Hint> HintManager::ParseActions(
         HintActionType action_type = HintActionType::Node;
         std::string type_string = actions[i]["Type"].asString();
         std::string enable_property = actions[i]["EnableProperty"].asString();
+        std::string enable_flag = actions[i]["EnableFlag"].asString();
+        std::string disable_flag = actions[i]["DisableFlag"].asString();
         LOG(VERBOSE) << "Action[" << i << "]'s Type: " << type_string;
         if (type_string.empty()) {
             LOG(VERBOSE) << "Failed to read "
@@ -812,7 +820,8 @@ std::unordered_map<std::string, Hint> HintManager::ParseActions(
                 }
             }
             actions_parsed[hint_type].node_actions.emplace_back(
-                    node_index, value_index, std::chrono::milliseconds(duration), enable_property);
+                    node_index, value_index, std::chrono::milliseconds(duration), enable_property,
+                    enable_flag, disable_flag);
 
         } else {
             const std::string &hint_value = actions[i]["Value"].asString();
@@ -823,8 +832,8 @@ std::unordered_map<std::string, Hint> HintManager::ParseActions(
                 actions_parsed.clear();
                 return actions_parsed;
             }
-            actions_parsed[hint_type].hint_actions.emplace_back(action_type, hint_value,
-                                                                enable_property);
+            actions_parsed[hint_type].hint_actions.emplace_back(
+                    action_type, hint_value, enable_property, enable_flag, disable_flag);
         }
 
         ++total_parsed;

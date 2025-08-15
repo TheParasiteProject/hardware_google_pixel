@@ -61,11 +61,21 @@ struct HintStatus {
 enum class HintActionType { Node, DoHint, EndHint, MaskHint };
 
 struct HintAction {
-    HintAction(HintActionType t, const std::string &v, const std::string &p)
-        : type(t), value(v), enable_property(p) {}
+    HintAction(HintActionType t, const std::string &v, const std::string &p, const std::string &eh,
+               const std::string &dh)
+        : type(t), value(v), enable_property(p) {
+        if (!eh.empty()) {
+            enable_flag = FlagProvider::GetInstance().GetterFromString(eh);
+        }
+        if (!dh.empty()) {
+            disable_flag = FlagProvider::GetInstance().GetterFromString(dh);
+        }
+    }
     HintActionType type;
     std::string value;
     std::string enable_property;
+    bool (*enable_flag)() = nullptr;
+    bool (*disable_flag)() = nullptr;
 };
 
 struct Hint {
