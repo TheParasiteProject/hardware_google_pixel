@@ -672,8 +672,8 @@ void SysfsCollector::logUfsStorageType() {
     }
     int ufs_type = 0;
     bool zufs_provisioned = android::base::GetBoolProperty(
-        "ro.vendor.product.ufs_type_zufs", false);
-    ALOGD("Property ro.vendor.product.ufs_type_zufs: %s", zufs_provisioned ? "true" : "false");
+        "ro.boot.zufs_provisioned", false);
+    ALOGD("Property ro.boot.zufs_provisioned: %s", zufs_provisioned ? "true" : "false");
 
     if (zufs_provisioned)
         ufs_type = UfsStorageTypeReported::ZUFS;
