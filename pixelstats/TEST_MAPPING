@@ -1,7 +1,8 @@
 {
   "presubmit" : [
     {
-      "name" : "PixelAtomsTest"
+      "name" : "PixelAtomsTest",
+       "keywords": ["internal"]
     }
   ]
 }
