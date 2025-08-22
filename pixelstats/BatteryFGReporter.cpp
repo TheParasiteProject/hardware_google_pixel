@@ -173,13 +173,13 @@ void BatteryFGReporter::checkAndReportFGAbnormality(const std::shared_ptr<IStats
     std::string path = getValidPath(paths);
     struct timespec boot_time;
     std::vector<std::vector<uint32_t>> events;
+    std::vector<int32_t> fields = {kNumFGPipelineFields};
 
     if (paths.empty())
         return;
 
     clock_gettime(CLOCK_MONOTONIC, &boot_time);
-    readLogbuffer(path, kNumFGPipelineFields, EvtFGAbnormalEvent, FormatOnlyVal, last_ab_check_,
-                  events);
+    readLogbuffer(path, fields, EvtFGAbnormalEvent, FormatOnlyVal, last_ab_check_, events);
     for (int seq = 0; seq < events.size(); seq++) {
         if (events[seq].size() == kNumFGPipelineFields) {
             struct BatteryFGPipeline data;
@@ -198,6 +198,7 @@ void BatteryFGReporter::checkAndReportHistValid(const std::shared_ptr<IStats> &s
     std::string path = getValidPath(paths);;
     struct timespec boot_time;
     std::vector<std::vector<uint32_t>> events;
+    std::vector<int32_t> fields = {kNumValidationFields};
     BatteryFuelGaugeReported report_msg;
 
     if (path.empty())
@@ -205,8 +206,7 @@ void BatteryFGReporter::checkAndReportHistValid(const std::shared_ptr<IStats> &s
 
     clock_gettime(CLOCK_MONOTONIC, &boot_time);
 
-    readLogbuffer(path, kNumValidationFields, EvtHistoryValidation, FormatOnlyVal, last_hv_check_,
-                  events);
+    readLogbuffer(path, fields, EvtHistoryValidation, FormatOnlyVal, last_hv_check_, events);
 
     for (int event_idx = 0; event_idx < events.size(); event_idx++) {
         std::vector<uint32_t> &event = events[event_idx];
@@ -239,6 +239,8 @@ void BatteryFGReporter::checkAndReportFGLearning(const std::shared_ptr<IStats> &
     auto format = FormatIgnoreAddr;
     const int data_type = EvtFGLearningHistory;
     BatteryFuelGaugeReported report_msg;
+    std::vector<int32_t> fields = {kNumFGLearningFields, kNumFGLearningFieldsV2,
+                                         kNumFGLearningFieldsV3, kNumFGLearningFieldsV4};
 
     clock_gettime(CLOCK_MONOTONIC, &boot_time);
     std::vector<std::string> valid_paths = getValidPaths(paths);
@@ -252,45 +254,41 @@ void BatteryFGReporter::checkAndReportFGLearning(const std::shared_ptr<IStats> &
         if (path.find("secondary") != std::string::npos)
             fg_idx = BatteryFuelGaugeReported::SECONDARY;
 
-        readLogbuffer(path, kNumFGLearningFieldsV2, data_type, format, last_lh_check_, events);
-        if (events.size() == 0)
-            readLogbuffer(path, kNumFGLearningFields, data_type, format, last_lh_check_, events);
+        readLogbuffer(path, fields, data_type, format, last_lh_check_, events);
 
         for (int event_idx = 0; event_idx < events.size(); event_idx++) {
             std::vector<uint32_t> &event = events[event_idx];
-            if (event.size() == kNumFGLearningFields ||
-                event.size() == kNumFGLearningFieldsV2) {
-                report_msg.set_data_type(data_type);
-                report_msg.set_unix_time_sec(event[16]);       /* unix time */
-                report_msg.set_fg_index(fg_idx);               /* fg index */
-                report_msg.add_fg_data(event[0]);              /* fcnom */
-                report_msg.add_fg_data(event[1]);              /* dpacc */
-                report_msg.add_fg_data(event[2]);              /* dqacc */
-                report_msg.add_fg_data(event[3]);              /* fcrep */
-                report_msg.add_fg_data(event[4]);              /* repsoc */
-                report_msg.add_fg_data(event[5]);              /* mixsoc */
-                report_msg.add_fg_data(event[6]);              /* vfsoc */
-                report_msg.add_fg_data(event[7]);              /* fstats */
-                report_msg.add_fg_data(event[8]);              /* avgtemp */
-                report_msg.add_fg_data(event[9]);              /* temp */
-                report_msg.add_fg_data(event[10]);             /* qh */
-                report_msg.add_fg_data(event[11]);             /* vcell */
-                report_msg.add_fg_data(event[12]);             /* avgvcell */
-                report_msg.add_fg_data(event[13]);             /* vfocv */
-                report_msg.add_fg_data(event[14]);             /* rcomp0 */
-                report_msg.add_fg_data(event[15]);             /* tempco */
-                if (event.size() == kNumFGLearningFieldsV2) {
-                    report_msg.add_fg_data(event[17]);         /* cotrim */
-                    report_msg.add_fg_data(event[18]);         /* coff */
-                    report_msg.add_fg_data(event[19]);         /* lock_1 */
-                    report_msg.add_fg_data(event[20]);         /* lock_2 */
-                }
-                convertAndReportFuelGaugeAtom(stats_client, report_msg);
-                report_msg.Clear();
-            } else {
-                ALOGE("Not support %zu fields for FG learning event", event.size());
-                continue;
+            report_msg.set_data_type(data_type);
+            report_msg.set_unix_time_sec(event[16]);       /* unix time */
+            report_msg.set_fg_index(fg_idx);               /* fg index */
+            report_msg.add_fg_data(event[0]);              /* fcnom */
+            report_msg.add_fg_data(event[1]);              /* dpacc */
+            report_msg.add_fg_data(event[2]);              /* dqacc */
+            report_msg.add_fg_data(event[3]);              /* fcrep */
+            report_msg.add_fg_data(event[4]);              /* repsoc */
+            report_msg.add_fg_data(event[5]);              /* mixsoc */
+            report_msg.add_fg_data(event[6]);              /* vfsoc */
+            report_msg.add_fg_data(event[7]);              /* fstats */
+            report_msg.add_fg_data(event[8]);              /* avgtemp */
+            report_msg.add_fg_data(event[9]);              /* temp */
+            report_msg.add_fg_data(event[10]);             /* qh */
+            report_msg.add_fg_data(event[11]);             /* vcell */
+            report_msg.add_fg_data(event[12]);             /* avgvcell */
+            report_msg.add_fg_data(event[13]);             /* vfocv */
+            report_msg.add_fg_data(event[14]);             /* rcomp0 */
+            report_msg.add_fg_data(event[15]);             /* tempco */
+            if (event.size() == kNumFGLearningFieldsV2 || event.size() == kNumFGLearningFieldsV4) {
+                report_msg.add_fg_data(event[17]);         /* cotrim */
+                report_msg.add_fg_data(event[18]);         /* coff */
+                report_msg.add_fg_data(event[19]);         /* lock_1 */
+                report_msg.add_fg_data(event[20]);         /* lock_2 */
+                if (event.size() == kNumFGLearningFieldsV4)
+                    report_msg.set_data_event(event[21]);      /* event */
+            } else if (event.size() == kNumFGLearningFieldsV3) {
+                report_msg.set_data_event(event[17]);      /* event */
             }
+            convertAndReportFuelGaugeAtom(stats_client, report_msg);
+            report_msg.Clear();
         }
     }
     last_lh_check_ = (unsigned int)boot_time.tv_sec;

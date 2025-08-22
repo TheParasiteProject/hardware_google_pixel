@@ -90,7 +90,9 @@ class BatteryFGReporter {
     unsigned int ab_trigger_time_[kNumMaxEvents] = {0};
     /* The number of elements for relaxation event */
     const int kNumFGLearningFields = 17;
-    const int kNumFGLearningFieldsV2 = 21;
+    const int kNumFGLearningFieldsV2 = 21;  /* add cotrim, coff, lock_1, lock_2 */
+    const int kNumFGLearningFieldsV3 = 18;  /* V1 + log event */
+    const int kNumFGLearningFieldsV4 = 22;  /* V2 + log event */
     /* The number of elements for history validation event */
     const int kNumValidationFields = 10;
     unsigned int last_hv_check_ = 0;
