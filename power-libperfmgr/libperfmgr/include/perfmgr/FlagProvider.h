@@ -76,7 +76,6 @@ class FlagProvider : public RawFlagProvider {
 
     ADD_FLAG(test_flag)
     ADD_FLAG(gpu_load_up_for_blurs)
-    ADD_FLAG(initial_hboost_severe)
     ADD_FLAG(ramp_down_sf_prefer_high_cap)
 };
 
