@@ -3033,6 +3033,9 @@ enum AudioUseCase {
   // voice call use case
   VOICE_CALL_DOWNLINK = 27;
   VOICE_CALL_UPLINK = 28;
+
+  // Additional use case
+  MMAP_PCM_OFFLOAD_PLAYBACK = 29;
 }
 
 /* Audio source with the original enum value. */
