@@ -1719,6 +1719,11 @@ std::chrono::milliseconds ThermalHelperImpl::thermalWatcherCallbackFunc(
             continue;
         }
 
+        if (!power_data_is_updated) {
+            power_files_.refreshPowerStatus();
+            power_data_is_updated = true;
+        }
+
         const auto ret = readTemperature(name_status_pair.first, &temp, force_no_cache);
         if (ret == SensorReadStatus::ERROR) {
             LOG(ERROR) << __func__
@@ -1749,11 +1754,6 @@ std::chrono::milliseconds ThermalHelperImpl::thermalWatcherCallbackFunc(
                     }
                 }
             }
-        }
-
-        if (!power_data_is_updated) {
-            power_files_.refreshPowerStatus();
-            power_data_is_updated = true;
         }
 
         if (sensor_status.severity == ThrottlingSeverity::NONE) {
