@@ -77,6 +77,7 @@ class FlagProvider : public RawFlagProvider {
     ADD_FLAG(test_flag)
     ADD_FLAG(gpu_load_up_for_blurs)
     ADD_FLAG(ramp_down_sf_prefer_high_cap)
+    ADD_FLAG(chrome_profile_bypass_hboost_severe_jank_level)
 };
 
 }  // namespace android::perfmgr
