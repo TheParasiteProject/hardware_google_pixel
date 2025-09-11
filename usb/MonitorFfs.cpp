@@ -41,6 +41,8 @@ using ::std::chrono::microseconds;
 using ::std::chrono::steady_clock;
 using ::std::literals::chrono_literals::operator""ms;
 
+constexpr char kSysClassUdcPath[] = "/sys/class/udc/";
+
 static volatile bool gadgetPullup;
 
 MonitorFfs::MonitorFfs(const char *const gadget)
@@ -158,10 +160,12 @@ void *MonitorFfs::startMonitorFd(void *param) {
             ALOGI("GADGET pulled up");
             monitorFfs->mCv.notify_all();
         } else {
-            monitorFfs->mWriteUdcLastError = errno;
-            ALOGE("Failed to pull up Gadget, err:%d %s", errno, strerror(errno));
-            if (WriteStringToFile("none", PULLUP_PATH)) {
-                ALOGI("clear Gadget due to the failure");
+            if (monitorFfs->isUsbGadgetMode()) {
+                monitorFfs->mWriteUdcLastError = errno;
+                ALOGE("Failed to pull up Gadget, err:%d %s", errno, strerror(errno));
+                if (WriteStringToFile("none", PULLUP_PATH)) {
+                    ALOGI("clear Gadget due to the failure");
+                }
             }
         }
     }
@@ -169,7 +173,7 @@ void *MonitorFfs::startMonitorFd(void *param) {
     while (!stopMonitor) {
         int nrEvents = epoll_wait(monitorFfs->mEpollFd, events, kEpollEvents, -1);
 
-        if (nrEvents <= 0) {
+        if (nrEvents <= 0 && errno != EINTR) {
             ALOGE("epoll wait returned without Fd being ready. nrEvents:%d err:%d %s", nrEvents,
                   errno, strerror(errno));
             continue;
@@ -229,10 +233,13 @@ void *MonitorFfs::startMonitorFd(void *param) {
                             // notify the main thread to signal userspace.
                             monitorFfs->mCv.notify_all();
                         } else {
-                            monitorFfs->mWriteUdcLastError = errno;
-                            ALOGE("Failed to pull up Gadget, err:%d %s", errno, strerror(errno));
-                            if (WriteStringToFile("none", PULLUP_PATH)) {
-                                ALOGI("clear Gadget due to the failure");
+                            if (monitorFfs->isUsbGadgetMode()) {
+                                monitorFfs->mWriteUdcLastError = errno;
+                                ALOGE("Failed to pull up Gadget, err:%d %s", errno,
+                                      strerror(errno));
+                                if (WriteStringToFile("none", PULLUP_PATH)) {
+                                    ALOGI("clear Gadget due to the failure");
+                                }
                             }
                         }
                     }
@@ -284,6 +291,17 @@ bool MonitorFfs::startMonitor() {
 
 bool MonitorFfs::isMonitorRunning() {
     return mMonitorRunning;
+}
+
+bool MonitorFfs::isUsbGadgetMode() {
+    std::string gadgetPath = std::string(kSysClassUdcPath) + mGadgetName;
+
+    // if the path is null, the device isn't in Usb Gadget Mode.
+    if (access(gadgetPath.c_str(), F_OK)) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 bool MonitorFfs::waitForPullUp(int timeout_ms) {
