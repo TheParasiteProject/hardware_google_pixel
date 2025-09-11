@@ -594,7 +594,20 @@ SensorReadStatus ThermalHelperImpl::readTemperature(std::string_view sensor_name
 
     if (ret == SensorReadStatus::UNDER_COLLECTING) {
         LOG(INFO) << "Thermal sensor " << sensor_name.data() << " is under collecting";
-        return SensorReadStatus::UNDER_COLLECTING;
+        const auto &sensor_info = sensor_info_map_.at(sensor_name.data());
+        if (sensor_info.virtual_sensor_info == nullptr ||
+            sensor_info.virtual_sensor_info->backup_sensor.empty()) {
+            return SensorReadStatus::UNDER_COLLECTING;
+        } else {
+            LOG(INFO) << "Data under collecting, using backup sensor: "
+                      << sensor_info.virtual_sensor_info->backup_sensor;
+            if (readThermalSensor(sensor_info.virtual_sensor_info->backup_sensor, &temp,
+                force_no_cache, &sensor_log_map) != SensorReadStatus::OKAY) {
+                LOG(INFO) << "Failed to read backup thermal sensor: "
+                           << sensor_info.virtual_sensor_info->backup_sensor;
+                return ret;
+            }
+        }
     }
 
     if (std::isnan(temp)) {

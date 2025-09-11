@@ -313,6 +313,9 @@ void HintManager::DumpToFd(int fd) {
     }
 
     DumpOtherConfigs(fd);
+
+    FlagProvider::GetInstance().DumpToFd(fd);
+
     fsync(fd);
 }
 
