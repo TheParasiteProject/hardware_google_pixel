@@ -21,3 +21,10 @@ flag {
     description: "This flag causes SF to no longer prefer high cap, regardless of what is set in the config"
     bug: "434909956"
 }
+
+flag {
+    namespace: "pixel_perf"
+    name: "chrome_profile_bypass_hboost_severe_jank_level"
+    description: "This flag causes Chrome to bypass the hboost severe jank level"
+    bug: "439777786"
+}
