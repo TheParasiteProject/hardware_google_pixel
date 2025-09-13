@@ -29,10 +29,11 @@ java_test_host {
         "truth",
     ],
     test_suites: [
-        "general-tests",
+        "device-tests",
     ],
+    // Due to the namespace, we cannot run it as a unit test.
     test_options: {
-        unit_test: true,
+        unit_test: false,
     },
 }
 
