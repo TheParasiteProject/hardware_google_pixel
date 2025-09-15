@@ -95,6 +95,8 @@ class MonitorFfs {
     void registerFunctionsAppliedCallback(void (*callback)(bool functionsApplied, void *(payload)),
                                           void *payload);
     bool isMonitorRunning();
+    // check whether USB gadget is enabled or not
+    bool isUsbGadgetMode();
     void dump(int fd);
     // Ep monitoring and the gadget pull up logic.
     static void *startMonitorFd(void *param);
