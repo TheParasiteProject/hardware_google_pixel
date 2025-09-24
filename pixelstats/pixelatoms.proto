@@ -150,6 +150,7 @@ message Atom {
       UfsStorageTypeReported ufs_storage_type_reported = 105096;
       ThermalTjTripCountReported thermal_tj_trip_count_reported = 105097;
       BatteryFuelGaugeReported battery_fuel_gauge_reported = 105098;
+      SubsystemRestartCrashReported subsystem_restart_crash_reported = 105099;
     }
     // AOSP atom ID range ends at 109999
     reserved 105077; // moved GpuFrequencyTimeInStatePerUidReported
@@ -3634,4 +3635,29 @@ message BatteryFuelGaugeReported {
 
   /* fg registers at the time of the type/event/index */
   repeated int32 fg_data = 6;
+}
+
+/*
+ * Collects and reports crashes collected by SSRestart service.
+ * Logged from:
+ *   hardware/google/pixel/pixelstats/SSRestartReporter.cpp
+ *
+ * Estimated Logging Rate:
+ * Peak: 10 times in 24 hours | Avg: 1 times per device per day
+ */
+message SubsystemRestartCrashReported {
+  /* Vendor reverse domain name, reserved and deprecated. */
+  optional string reverse_domain_name = 1;
+
+  enum SSRestartCrashReason {
+    UNKNOWN = 0;
+    U100_POWER_ON_ERR = 1;
+    U100_COREDUMP = 2;
+    VPU_CRASH = 3;
+  }
+
+  /* Crash reason */
+  optional SSRestartCrashReason crash_reason = 2;
+  /* Number of crashes */
+  optional int32 crash_count = 3;
 }
