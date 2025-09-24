@@ -1288,6 +1288,10 @@ void SysfsCollector::logZramStats(const std::shared_ptr<IStats> &stats_client) {
     reportZramBdStat(stats_client);
 }
 
+void SysfsCollector::logSSRestartStats(const std::shared_ptr<IStats> &stats_client) {
+    ss_restart_reporter_.logSSRestartStats(stats_client);
+}
+
 void SysfsCollector::logBootStats(const std::shared_ptr<IStats> &stats_client) {
     int mounted_time_sec = 0;
 
@@ -2399,6 +2403,7 @@ void SysfsCollector::logPerHour() {
     mm_metrics_reporter_.logGcmaPerHour(stats_client);
     mm_metrics_reporter_.logMmProcessUsageByOomGroupSnapshot(stats_client);
     logZramStats(stats_client);
+    logSSRestartStats(stats_client);
     if (powerMitigationStatsPath.empty())
         mitigation_stats_reporter_.logMitigationStatsPerHour(stats_client,
                                                              powerMitigationStatsPath.c_str());

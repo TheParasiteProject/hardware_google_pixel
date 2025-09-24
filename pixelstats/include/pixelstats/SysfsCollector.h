@@ -29,6 +29,7 @@
 #include "MitigationDurationReporter.h"
 #include "MitigationStatsReporter.h"
 #include "MmMetricsReporter.h"
+#include "SSRestartReporter.h"
 #include "TempResidencyReporter.h"
 #include "ThermalStatsReporter.h"
 #include "WaterEventReporter.h"
@@ -104,6 +105,7 @@ class SysfsCollector {
     void logBluetoothAudioUsage(const std::shared_ptr<IStats> &stats_client);
     void logBatteryGMSR(const std::shared_ptr<IStats> &stats_client);
     void logDmVerityPartitionReadAmount(const std::shared_ptr<IStats> &stats_client);
+    void logSSRestartStats(const std::shared_ptr<IStats> &stats_client);
     void logBatteryHistoryValidation();
     void logUfsStorageType();
 
@@ -118,6 +120,7 @@ class SysfsCollector {
     TempResidencyReporter temp_residency_reporter_;
     WaterEventReporter water_event_reporter_;
     BatteryFGReporter battery_fg_reporter_;
+    SSRestartReporter ss_restart_reporter_;
     // Proto messages are 1-indexed and VendorAtom field numbers start at 2, so
     // store everything in the values array at the index of the field number    // -2.
     const int kVendorAtomOffset = 2;
