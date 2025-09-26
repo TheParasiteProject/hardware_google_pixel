@@ -38,7 +38,6 @@ using aidl::android::frameworks::stats::VendorAtom;
 using android::base::ReadFileToString;
 using android::hardware::google::pixel::PixelAtoms::SubsystemRestartCrashReported;
 
-const std::string ssrdump_dir = "/data/vendor/ssrdump";
 const std::string btime_prefix = "btime ";
 const std::string crash_reason_prefix = "crash_reason: ";
 const std::string crash_count_prefix = "crash_count: ";
@@ -102,7 +101,9 @@ void SSRestartReporter::reportFile(const std::shared_ptr<IStats> &stats_client,
     reportSSRestartStatsEvent(stats_client, crash_reason, crash_count);
 }
 
-void SSRestartReporter::logSSRestartStats(const std::shared_ptr<IStats> &stats_client) {
+void SSRestartReporter::logSSRestartStats(const std::shared_ptr<IStats> &stats_client,
+                                          const std::string &ssrdump_dir) {
+
     if (last_scan_time_ == 0) {
         last_scan_time_ = getBootTime() - BOOT_TIME_MARGIN;
     }

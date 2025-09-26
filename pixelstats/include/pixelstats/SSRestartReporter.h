@@ -35,7 +35,8 @@ using aidl::android::frameworks::stats::IStats;
 class SSRestartReporter {
   public:
     SSRestartReporter();
-    void logSSRestartStats(const std::shared_ptr<IStats> &stats_client);
+    void logSSRestartStats(const std::shared_ptr<IStats> &stats_client,
+                           const std::string &ssrdump_dir);
 
   private:
     void reportSSRestartStatsEvent(const std::shared_ptr<IStats> &stats_client,

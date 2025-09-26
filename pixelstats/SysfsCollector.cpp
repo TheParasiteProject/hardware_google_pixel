@@ -1289,7 +1289,12 @@ void SysfsCollector::logZramStats(const std::shared_ptr<IStats> &stats_client) {
 }
 
 void SysfsCollector::logSSRestartStats(const std::shared_ptr<IStats> &stats_client) {
-    ss_restart_reporter_.logSSRestartStats(stats_client);
+    std::string ssrdump_dir = getCStringOrDefault(configData, "SSRestartPath");
+    if (ssrdump_dir.empty()) {
+        ALOGV("SSRestart path not specified in JSON");
+        return;
+    }
+    ss_restart_reporter_.logSSRestartStats(stats_client, ssrdump_dir);
 }
 
 void SysfsCollector::logBootStats(const std::shared_ptr<IStats> &stats_client) {
