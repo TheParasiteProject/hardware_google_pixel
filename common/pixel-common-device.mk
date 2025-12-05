@@ -23,14 +23,14 @@ ifneq (,$(filter eng, $(TARGET_BUILD_VARIANT)))
 ifeq (,$(filter aosp_%,$(TARGET_PRODUCT)))
 PRODUCT_PACKAGES_DEBUG += wifi_diagnostic
 BOARD_VENDOR_SEPOLICY_DIRS += hardware/google/pixel-sepolicy/wifi_diagnostic
-endif
-endif
 
-PRODUCT_PACKAGES_ENG += wifi_sniffer
+PRODUCT_PACKAGES_DEBUG += wifi_sniffer
 BOARD_VENDOR_SEPOLICY_DIRS += hardware/google/pixel-sepolicy/wifi_sniffer
 
-PRODUCT_PACKAGES_ENG += wifi_perf_diag
+PRODUCT_PACKAGES_DEBUG += wifi_perf_diag
 BOARD_VENDOR_SEPOLICY_DIRS += hardware/google/pixel-sepolicy/wifi_perf_diag
+endif
+endif
 
 # Enable whole-program R8 Java optimizations for SystemUI and system_server,
 # but also allow explicit overriding for testing and development.
